@@ -1,0 +1,37 @@
+# =========================
+# Government scheme datasets
+# =========================
+nagrik-agent-backend/data/text_data/
+nagrik-agent-backend/data/gov_myscheme/
+nagrik-agent-backend/data/.cache/
+
+# =========================
+# ChromaDB / vector database
+# =========================
+nagrik-agent-backend/data/chroma_store/
+
+# =========================
+# Logs
+# =========================
+nagrik-agent-backend/logs/
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+
+# =========================
+# OS / editor
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
