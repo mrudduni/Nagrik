@@ -1,0 +1,56 @@
+﻿SAMPLE ROW 1:
+  [scheme_name]: "Immediate Relief Assistance" under "Welfare and Relief for Fishermen During Lean Seasons and Natural Calamities Scheme"
+  [slug]: ira-wrflsncs
+  [details]: The scheme "Immediate Relief Assistance" is a Sub-Component under the scheme "Welfare and Relief for Fishermen During Lean Seasons and Natural Calamities Scheme". The scheme is extended to all the reg
+  [benefits]: Γé╣ 1,00,000, in two installments of Γé╣ 50,000 each, as immediate relief assistance for the family (legal heir) of the missing fisherman. ∩╗┐ Disbursal Initially, 50% will be extended within 3 months from 
+  [eligibility]: The applicant should be the family (legal heir) of the missing fisherman. The missing fisherman should have been a resident of the Union territory of Puducherry. The missing fisherman must have lost h
+  [application]: Step 1: The interested applicant should visit the office of the concerned authority i.e. the Department of Fisheries and Fishermen Welfare/Sub-Offices of outlying regions in all four regions. Step 1: 
+  [documents]: Photograph of the Family (Legal Heir) of the Missing Fisherman. Residential Certificate of the Missing Fishermen. Proof of Age of the Missing Fishermen. Declaration That the Missing Fisherman Was Not 
+  [level]: State
+  [schemeCategory]: Agriculture,Rural & Environment, Social welfare & Empowerment
+  [Unnamed: 9]: nan
+  [tags]: Missing, Fisherman, Relief, Financial Assistance, Family
+
+SAMPLE ROW 2:
+  [scheme_name]: AICTE SHORT TERM TRAINING PROGRAMME-SFURTI SCHEME
+  [slug]: astpss
+  [details]: Short Term Training Programme-SFURTI Program, launched by the All India Council for Technical Education (AICTE), aims to provide financial assistance to the institutions for conducting faculty and stu
+  [benefits]: Financial Assistance : Limit of funding Γé╣ 4,00,000/- to the institution. Disbursement of the Fund: The full amount of the grant sanctioned shall be released after successful conduct of the program to 
+  [eligibility]: The institution should be AICTE approved.
+  [application]: Registration of New Institute: Step 01: Visit http://portal.aicte-india.org/partnerportal_enu/start.swe and click on 'New Institute' button. Step 02: Users will be redirected to another website. Hover
+  [documents]: Feedback Form Copy of Proceedings Completion Report ∩╗┐
+  [level]: Central
+  [schemeCategory]: Education & Learning
+  [Unnamed: 9]: nan
+  [tags]: Trainings, Financial Assistance, AICTE
+
+Unique levels: ['State' 'Central']
+
+Unique categories: ['Agriculture,Rural & Environment, Social welfare & Empowerment'
+ 'Education & Learning' 'Social welfare & Empowerment'
+ 'Business & Entrepreneurship' 'Women and Child' 'Health & Wellness'
+ 'Skills & Employment'
+ 'Agriculture,Rural & Environment, Banking,Financial Services and Insurance'
+ 'Agriculture,Rural & Environment'
+ 'Business & Entrepreneurship, Science, IT & Communications'
+ 'Business & Entrepreneurship, Skills & Employment'
+ 'Business & Entrepreneurship, Agriculture,Rural & Environment'
+ 'Business & Entrepreneurship, Transport & Infrastructure'
+ 'Business & Entrepreneurship, Social welfare & Empowerment'
+ 'Skills & Employment, Business & Entrepreneurship'
+ 'Banking,Financial Services and Insurance, Social welfare & Empowerment'
+ 'Education & Learning, Transport & Infrastructure'
+ 'Education & Learning, Social welfare & Empowerment'
+ 'Education & Learning, Travel & Tourism'
+ 'Women and Child, Social welfare & Empowerment']
+
+Unique tags sample: ['Missing, Fisherman, Relief, Financial Assistance, Family'
+ 'Trainings, Financial Assistance, AICTE'
+ 'Building Worker, Construction Workers, Unregistered Laborer, Death'
+ 'Goods And Services Marketing, Turnkey Projects, Machinery And Technology, NSIC'
+ 'Social Welfare, Financial Assistance, Deceased, Brahmin'
+ 'Intra Caste, Marriage, Schedule Tribe, Incentive, ST'
+ 'Powerloom, Incentives, State Capital Investment Subsidy, Entrepreneurship, Subsidy, Reimbursement'
+ 'Women, Empowerment, Development, Motivaction'
+ 'Financial Assistance, Construction Workers, Labour Tools, Building Worker'
+ 'Medical, Insurance, Health, Labor, Premium, Construction, Pension']
