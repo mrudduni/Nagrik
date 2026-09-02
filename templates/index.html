@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nagrik Voice Assistant</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f4f4f9; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
+        h1 { color: #333; margin-top: 0; }
+        .status { margin: 1rem 0; font-weight: bold; color: #555; height: 1.5rem; }
+        .transcript { background: #f8f9fa; border: 1px solid #ddd; padding: 1rem; border-radius: 8px; min-height: 100px; margin-bottom: 1.5rem; text-align: left; overflow-y: auto; max-height: 200px; }
+        .transcript p { margin: 0.5rem 0; }
+        .user-text { color: #0066cc; }
+        .agent-text { color: #28a745; }
+        button { background-color: #0066cc; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
+        button:hover { background-color: #0052a3; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #stopBtn { background-color: #dc3545; display: none; }
+        #stopBtn:hover { background-color: #c82333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Nagrik Voice Assistant</h1>
+        <p>Fill out your public grievance using just your voice.</p>
+        
+        <div class="status" id="statusText">Ready to start.</div>
+        
+        <div class="transcript" id="transcriptBox">
+            <!-- Chat history goes here -->
+        </div>
+
+        <button id="startBtn">Start Conversation</button>
+        <button id="stopBtn">Stop</button>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusText = document.getElementById('statusText');
+        const transcriptBox = document.getElementById('transcriptBox');
+        
+        let sessionId = "web_session_" + Math.random().toString(36).substring(7);
+        let recognition = null;
+        let isConversing = false;
+
+        // Initialize Speech Recognition
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-IN'; // English India
+
+            recognition.onstart = function() {
+                statusText.innerText = "Listening...";
+            };
+
+            recognition.onerror = function(event) {
+                statusText.innerText = "Error: " + event.error;
+                stopConversation();
+            };
+
+            recognition.onend = function() {
+                if (isConversing) {
+                    statusText.innerText = "Processing...";
+                }
+            };
+
+            recognition.onresult = async function(event) {
+                const speechResult = event.results[0][0].transcript;
+                appendTranscript("You", speechResult, "user-text");
+                
+                // Send to backend
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ session_id: sessionId, text: speechResult })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.response) {
+                        appendTranscript("Nagrik", data.response, "agent-text");
+                        speakAndListen(data.response, !data.is_complete);
+                    }
+                    
+                    if (data.is_complete) {
+                        statusText.innerText = "Form Completed!";
+                        stopConversation();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    statusText.innerText = "Network Error.";
+                    stopConversation();
+                }
+            };
+        } else {
+            statusText.innerText = "Speech Recognition not supported in this browser.";
+            startBtn.disabled = true;
+        }
+
+        function appendTranscript(sender, text, className) {
+            const p = document.createElement('p');
+            p.className = className;
+            p.innerHTML = `<strong>${sender}:</strong> ${text}`;
+            transcriptBox.appendChild(p);
+            transcriptBox.scrollTop = transcriptBox.scrollHeight;
+        }
+
+        function speakAndListen(text, shouldListenNext) {
+            if (!('speechSynthesis' in window)) {
+                if (shouldListenNext) recognition.start();
+                return;
+            }
+
+            statusText.innerText = "Speaking...";
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-IN';
+            
+            utterance.onend = function() {
+                if (isConversing && shouldListenNext) {
+                    recognition.start();
+                } else if (!shouldListenNext) {
+                    statusText.innerText = "Form Completed!";
+                    stopConversation();
+                }
+            };
+            
+            speechSynthesis.speak(utterance);
+        }
+
+        async function startConversation() {
+            isConversing = true;
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+            transcriptBox.innerHTML = '';
+            
+            // Start the conversation on the backend
+            try {
+                statusText.innerText = "Initializing...";
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId, text: "" }) // empty text to get first prompt
+                });
+                
+                const data = await response.json();
+                appendTranscript("Nagrik", data.response, "agent-text");
+                speakAndListen(data.response, true);
+                
+            } catch (err) {
+                console.error(err);
+                statusText.innerText = "Failed to start.";
+                stopConversation();
+            }
+        }
+
+        function stopConversation() {
+            isConversing = false;
+            startBtn.style.display = 'inline-block';
+            stopBtn.style.display = 'none';
+            if (recognition) recognition.stop();
+            speechSynthesis.cancel();
+            if (statusText.innerText === "Speaking..." || statusText.innerText === "Listening...") {
+                statusText.innerText = "Stopped.";
+            }
+            // Generate a new session ID for next time
+            sessionId = "web_session_" + Math.random().toString(36).substring(7);
+        }
+
+        startBtn.addEventListener('click', startConversation);
+        stopBtn.addEventListener('click', stopConversation);
+    </script>
+</body>
+</html>

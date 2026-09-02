@@ -1,0 +1,31 @@
+{
+  "name": "Public Grievance Form",
+  "description": "Form for lodging a public grievance with a government department in India.",
+  "fields": [
+    {
+      "name": "complainant_name",
+      "type": "string",
+      "description": "Full name of the person lodging the grievance."
+    },
+    {
+      "name": "aadhaar_number",
+      "type": "number",
+      "description": "12-digit Aadhaar number of the complainant."
+    },
+    {
+      "name": "ministry_or_department",
+      "type": "string",
+      "description": "The government ministry or department the grievance is related to (e.g., Railways, Telecom, Health, Municipal Corporation)."
+    },
+    {
+      "name": "grievance_description",
+      "type": "string",
+      "description": "Detailed description of the issue or complaint."
+    },
+    {
+      "name": "pincode",
+      "type": "number",
+      "description": "6-digit postal PIN code of the complainant's address."
+    }
+  ]
+}
