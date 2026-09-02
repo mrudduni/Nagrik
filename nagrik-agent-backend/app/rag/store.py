@@ -2,12 +2,9 @@
 ChromaDB wrapper for Tree-RAG storage. Uses a local persistent client so
 the demo doesn't depend on network access to a hosted vector DB.
 """
-import chromadb
-from chromadb.utils import embedding_functions
-
 from app.config import settings
 from app.rag.chunker import DocChunk
-
+import hashlib  
 
 _COLLECTION_NAME = "nagrik_gov_docs"
 
@@ -20,6 +17,8 @@ def _get_client():
     global _client
 
     if _client is None:
+        import chromadb
+
         _client = chromadb.PersistentClient(
             path=settings.chroma_persist_dir
         )
@@ -32,6 +31,7 @@ def _get_embedding_fn():
     global _embedding_fn
 
     if _embedding_fn is None:
+        from chromadb.utils import embedding_functions
 
         _embedding_fn = (
             embedding_functions
@@ -59,10 +59,22 @@ def add_chunks(chunks: list[DocChunk]) -> int:
 
     collection = get_collection()
 
-    ids = [
-        f"{c.scheme or 'unknown'}-{c.page or 0}-{i}"
-        for i, c in enumerate(chunks)
-    ]
+    ids = []
+
+    for i, c in enumerate(chunks):
+        raw_id = "|".join([
+        c.scheme or "unknown",
+        c.source_file or "",
+        str(c.page or 0),
+        str(i),
+        c.text[:200],
+        ])
+
+    chunk_id = hashlib.sha256(
+        raw_id.encode("utf-8")
+    ).hexdigest()
+
+    ids.append(chunk_id)
 
     documents = [c.text for c in chunks]
 

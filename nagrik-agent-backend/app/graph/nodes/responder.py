@@ -22,6 +22,9 @@ If the knowledge base returns no relevant result, say so honestly instead \
 of guessing. Keep replies concise and in plain language a citizen (not a \
 policy expert) can understand.
 
+When tree_rag_search returns chunks, ground the answer only in those chunks
+and mention the scheme/source/page when available. Do not invent citations.
+
 Detected intent for this turn: {intent}
 """
 

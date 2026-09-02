@@ -13,8 +13,9 @@ import re
 
 from torch import dist
 from app.rag import store
+from app.rag.retriever import tree_rag_search
 
-
+    
 SIMILARITY_DISTANCE_THRESHOLD = 0.90
 
 

@@ -41,4 +41,8 @@ class ExtractedDocFields(BaseModel):
     """Structured output schema for the doc/image understanding node."""
     doc_type: Optional[str] = None
     fields: dict[str, str] = Field(default_factory=dict)
+    text: Optional[str] = Field(
+        default=None,
+        description="Any reliably extracted plain text from the document/image.",
+    )
     confidence: float = 0.0

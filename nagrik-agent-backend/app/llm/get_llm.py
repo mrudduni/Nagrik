@@ -9,12 +9,23 @@ needed) in .env. Zero code changes required anywhere else.
 """
 from functools import lru_cache
 from app.config import settings
-from app.llm.providers.openrouter import build_openrouter_llm
-from app.llm.providers.gemini import build_gemini_llm
+
+
+def _build_openrouter(model: str | None, temperature: float):
+    from app.llm.providers.openrouter import build_openrouter_llm
+
+    return build_openrouter_llm(model=model, temperature=temperature)
+
+
+def _build_gemini(model: str | None, temperature: float):
+    from app.llm.providers.gemini import build_gemini_llm
+
+    return build_gemini_llm(model=model, temperature=temperature)
+
 
 _BUILDERS = {
-    "openrouter": build_openrouter_llm,
-    "gemini": build_gemini_llm,
+    "openrouter": _build_openrouter,
+    "gemini": _build_gemini,
 }
 
 

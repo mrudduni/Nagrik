@@ -6,15 +6,36 @@ plug in a real test image before Day 8.
 import pytest
 from app.graph.nodes.doc_understanding import doc_understanding_node
 
-SAMPLE_BASE64_IMAGE = ""  # TODO: paste a small sample ID/form image base64 here
+
+class FakeStructuredVisionLLM:
+    async def ainvoke(self, messages):
+        from app.schemas.forms import ExtractedDocFields
+
+        return ExtractedDocFields(
+            doc_type="aadhaar",
+            fields={"full_name": "Ravi Kumar"},
+            text="Ravi Kumar",
+            confidence=0.9,
+        )
+
+
+class FakeVisionLLM:
+    def with_structured_output(self, schema):
+        return FakeStructuredVisionLLM()
 
 
 @pytest.mark.asyncio
-@pytest.mark.skipif(not SAMPLE_BASE64_IMAGE, reason="Add a sample image before running")
-async def test_extracts_fields_from_sample_doc():
+async def test_extracts_fields_from_sample_doc(monkeypatch):
+    monkeypatch.setattr(
+        "app.graph.nodes.doc_understanding.get_vision_llm",
+        lambda: FakeVisionLLM(),
+    )
+
     result = await doc_understanding_node(
         state={"extracted_fields": {}},
-        image_base64=SAMPLE_BASE64_IMAGE,
+        image_base64="ZmFrZS1pbWFnZQ==",
         mime_type="image/jpeg",
     )
-    assert isinstance(result["extracted_fields"], dict)
+    assert result["extracted_fields"]["full_name"] == "Ravi Kumar"
+    assert "aadhaar" in result["extracted_text"]
+

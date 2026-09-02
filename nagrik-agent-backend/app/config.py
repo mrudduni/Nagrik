@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # --- Sarvam ---
     sarvam_api_key: str = ""
     sarvam_base_url: str = "https://api.sarvam.ai"
+    enable_sarvam_fallbacks: bool = True
 
     # --- Memory / checkpointer ---
     checkpointer_backend: str = "memory"   # "memory" | "redis" | "postgres"
@@ -34,6 +35,10 @@ class Settings(BaseSettings):
 
     # --- Tree-RAG ---
     chroma_persist_dir: str = "./data/chroma_store"
+    rag_top_k: int = 5
+    rag_candidate_k: int = 10
+    rag_similarity_distance_threshold: float = 0.90
 
 
 settings = Settings()
+

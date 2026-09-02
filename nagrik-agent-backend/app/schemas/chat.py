@@ -36,6 +36,16 @@ class NavigationAction(BaseModel):
     params: dict = Field(default_factory=dict)
 
 
+class ChatSource(BaseModel):
+    scheme: Optional[str] = None
+    ministry: Optional[str] = None
+    department: Optional[str] = None
+    source_file: Optional[str] = None
+    source_url: Optional[str] = None
+    page: Optional[int] = None
+    snippet: Optional[str] = None
+
+
 class ChatResponse(BaseModel):
     session_id: str
     reply_text: str
@@ -44,3 +54,5 @@ class ChatResponse(BaseModel):
     intent: Optional[str] = None
     navigation: Optional[NavigationAction] = None
     tool_calls_made: list[str] = Field(default_factory=list)
+    sources: list[ChatSource] = Field(default_factory=list)
+    extracted_fields: dict = Field(default_factory=dict)
