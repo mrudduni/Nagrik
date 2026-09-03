@@ -113,9 +113,8 @@ python ingestion/extract.py --limit 10
 python ingestion/extract.py
 ```
 
-> ⚠️ Gemini 2.5 Flash free tier: ~15 RPM. Full run takes ~4 hours. Re-running is safe.
 
-**Alternative: Use mock data for testing without an API key:**
+
 
 ```bash
 python create_mock_extraction.py
