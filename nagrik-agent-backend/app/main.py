@@ -13,12 +13,20 @@ app.include_router(applications.router, tags=["applications"])
 app.include_router(complaints.router, tags=["complaints"])
 app.include_router(schemes.router, tags=["schemes"])
 
+import os
+
+cors_origins_raw = os.environ.get("CORS_ORIGINS", "")
+allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+if cors_origins_raw:
+    allowed_origins.extend([o.strip() for o in cors_origins_raw.split(",") if o.strip()])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https?://.*" if not cors_origins_raw else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
