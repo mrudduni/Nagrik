@@ -170,10 +170,19 @@ export async function getCategoryBreakdown(): Promise<CategoryBreakdown[]> {
     if (res.ok) {
       const data = await res.json()
       if (data && data.length > 0) {
-        return data.map((c: any) => ({
-          category: mapCategory(c.category),
-          count: c.count,
-          percentChange: Math.round((c.percentage - 15) * 1.5),
+        const aggregated: Record<string, { count: number; percentage: number }> = {}
+        for (const c of data) {
+          const catName = mapCategory(c.category)
+          if (!aggregated[catName]) {
+            aggregated[catName] = { count: 0, percentage: 0 }
+          }
+          aggregated[catName].count += c.count
+          aggregated[catName].percentage += c.percentage || 0
+        }
+        return Object.entries(aggregated).map(([category, val]) => ({
+          category,
+          count: val.count,
+          percentChange: Math.round((val.percentage - 15) * 1.5),
         }))
       }
     }

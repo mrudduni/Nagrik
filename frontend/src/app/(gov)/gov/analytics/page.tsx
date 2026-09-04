@@ -49,8 +49,8 @@ export default function AnalyticsPage() {
           <p className="text-sm text-muted-foreground">No significant anomalies detected in the current period.</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {anomalies.map((a) => (
-              <div key={a.category} className="flex items-center justify-between rounded-lg border border-border p-3">
+            {anomalies.map((a, i) => (
+              <div key={`${a.category}-${i}`} className="flex items-center justify-between rounded-lg border border-border p-3">
                 <div>
                   <p className="text-sm font-medium">{a.category}</p>
                   <p className="text-xs text-muted-foreground">{a.count} complaints this period</p>
