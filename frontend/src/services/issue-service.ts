@@ -157,7 +157,7 @@ export async function listIssues(filters: IssueFilters = {}): Promise<CivicIssue
 }
 
 export async function getIssue(id: string): Promise<CivicIssue | undefined> {
-  // Try backend first for NGR-prefixed IDs
+  // Try backend first for NGR-prefixed IDs (primary backend on :8000)
   if (id.toUpperCase().startsWith("NGR-")) {
     try {
       const record = await apiGet<BackendComplaintStatusRecord>(
