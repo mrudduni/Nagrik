@@ -38,30 +38,65 @@ def _extract_pdf_text(document_base64: str) -> str:
     return "\n\n".join(page for page in pages if page)
 
 
-async def doc_understanding_node(state: AgentState, image_base64: str, mime_type: str = "image/jpeg") -> dict:
+async def doc_understanding_node(
+    state: AgentState,
+    image_base64: str,
+    mime_type: str = "image/jpeg",
+) -> dict:
+
+    # ---------- PDF ----------
     if mime_type == "application/pdf":
         extracted_text = _extract_pdf_text(image_base64)
+
         return {
             "extracted_fields": state.get("extracted_fields", {}),
             "extracted_text": extracted_text,
         }
 
+    # ---------- IMAGE ----------
+    if not mime_type.startswith("image/"):
+        raise ValueError(
+            f"Unsupported document MIME type: {mime_type}. "
+            "Only images and application/pdf are supported."
+        )
+
     llm = get_vision_llm()
     structured_llm = llm.with_structured_output(ExtractedDocFields)
 
-    message = HumanMessage(content=[
-        {"type": "text", "text": "Extract fields from this document."},
-        {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{image_base64}"}},
-    ])
-
-    result: ExtractedDocFields = await structured_llm.ainvoke(
-        [SystemMessage(content=DOC_SYSTEM_PROMPT), message]
+    message = HumanMessage(
+        content=[
+            {
+                "type": "text",
+                "text": "Extract fields from this document.",
+            },
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:{mime_type};base64,{image_base64}"
+                },
+            },
+        ]
     )
 
-    merged_fields = {**state.get("extracted_fields", {}), **result.fields}
+    result: ExtractedDocFields = await structured_llm.ainvoke(
+        [
+            SystemMessage(content=DOC_SYSTEM_PROMPT),
+            message,
+        ]
+    )
+
+    merged_fields = {
+        **state.get("extracted_fields", {}),
+        **result.fields,
+    }
+
     extracted_text = result.text or ""
+
     if result.doc_type:
-        extracted_text = f"Document type: {result.doc_type}\n{extracted_text}".strip()
+        extracted_text = (
+            f"Document type: {result.doc_type}\n"
+            f"{extracted_text}"
+        ).strip()
 
     return {
         "extracted_fields": merged_fields,

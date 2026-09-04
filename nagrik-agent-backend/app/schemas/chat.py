@@ -21,9 +21,9 @@ class ChatRequest(BaseModel):
         default=None, description="Text message. Omit if only attachments are sent."
     )
     language: Optional[str] = Field(
-        default="en", description="BCP-47-ish code, e.g. 'en', 'hi', 'ta'. "
-        "For voice requests this is usually detected server-side."
-    )
+    default=None,
+    description="Optional language override. If omitted, language is detected automatically."
+)
     attachments: list[Attachment] = Field(default_factory=list)
 
 

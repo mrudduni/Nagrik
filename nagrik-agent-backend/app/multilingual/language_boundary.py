@@ -24,24 +24,66 @@ HINGLISH_HINTS = {
 }
 
 
-def detect_text_language(text: str | None, declared_language: str | None = None) -> str:
+def detect_text_language(
+    text: str | None,
+    declared_language: str | None = None,
+) -> str:
     """
-    Lightweight local detection for routing/fallbacks.
-    Sarvam remains the source of truth when audio/STT or translation is used.
+    Detect the language of text locally using Unicode script ranges.
+
+    An explicitly declared language always takes priority.
+    Otherwise detect common Indian scripts and fall back to English.
     """
+
     if declared_language and declared_language not in ("auto", "detect"):
         return declared_language
 
     value = text or ""
-    if any("\u0900" <= char <= "\u097f" for char in value):
+
+    # Hindi / Marathi / Nepali / Sanskrit
+    if any("\u0900" <= char <= "\u097F" for char in value):
+        # Devanagari alone cannot reliably distinguish Hindi from Marathi.
+        # Without an explicit language, use Hindi as the default.
         return "hi-IN"
 
-    words = {word.strip(".,?!:;()[]{}\"'").lower() for word in value.split()}
+    # Bengali / Assamese
+    if any("\u0980" <= char <= "\u09FF" for char in value):
+        return "bn-IN"
+
+    # Gujarati
+    if any("\u0A80" <= char <= "\u0AFF" for char in value):
+        return "gu-IN"
+
+    # Punjabi / Gurmukhi
+    if any("\u0A00" <= char <= "\u0A7F" for char in value):
+        return "pa-IN"
+
+    # Tamil
+    if any("\u0B80" <= char <= "\u0BFF" for char in value):
+        return "ta-IN"
+
+    # Telugu
+    if any("\u0C00" <= char <= "\u0C7F" for char in value):
+        return "te-IN"
+
+    # Kannada
+    if any("\u0C80" <= char <= "\u0CFF" for char in value):
+        return "kn-IN"
+
+    # Malayalam
+    if any("\u0D00" <= char <= "\u0D7F" for char in value):
+        return "ml-IN"
+
+    # Hinglish / romanized Indian language
+    words = {
+        word.strip(".,?!:;()[]{}\"'").lower()
+        for word in value.split()
+    }
+
     if words & HINGLISH_HINTS:
         return "hi-IN"
 
     return PIVOT_LANGUAGE
-
 
 async def _translate_or_fallback(
     text: str,
@@ -67,34 +109,96 @@ async def normalize_incoming(
     text: str | None,
     audio_base64: str | None,
     declared_language: str | None,
+    mime_type: str | None = None,
 ) -> dict:
     """
-    Returns {'text': str_in_pivot_language, 'original_language': str}
-    Handles: text-in-Indian-language, audio-in, or plain English text.
-    """
-    if audio_base64:
-        stt_result = await sarvam_client.speech_to_text(audio_base64, language_code=declared_language)
-        transcript = stt_result["transcript"]
-        detected_lang = stt_result.get("detected_language") or declared_language or PIVOT_LANGUAGE
-    else:
-        transcript = text or ""
-        detected_lang = detect_text_language(transcript, declared_language)
+    Returns:
+        {
+            "text": str_in_pivot_language,
+            "original_text": str,
+            "original_language": str
+        }
 
-    if detected_lang and detected_lang not in ENGLISH_ALIASES:
+    Handles:
+    - text input
+    - Indian-language text
+    - audio input
+    - automatic language detection
+    """
+
+    # ---------------------------------------------------------
+    # 1. Get the original text
+    # ---------------------------------------------------------
+    if audio_base64:
+        stt_result = await sarvam_client.speech_to_text(
+            audio_base64,
+            language_code=declared_language,
+            mime_type=mime_type,
+        )
+
+        transcript = (stt_result.get("transcript") or "").strip()
+
+        if not transcript:
+            raise ValueError("Speech-to-text returned an empty transcript.")
+
+        detected_language = (
+            stt_result.get("detected_language")
+            or declared_language
+            or PIVOT_LANGUAGE
+        )
+
+        original_text = transcript
+        original_language = detected_language
+
+        print("STT RESULT:", stt_result)
+        print("TRANSCRIPT:", transcript)
+        print("DETECTED LANGUAGE:", detected_language)
+
+    else:
+        original_text = (text or "").strip()
+
+        if not original_text:
+            original_text = "(citizen sent an attachment with no text)"
+
+        original_language = detect_text_language(
+            original_text,
+            declared_language,
+        )
+
+    # ---------------------------------------------------------
+    # 2. Normalize language for translation
+    # ---------------------------------------------------------
+    translation_source_language = original_language
+
+    if translation_source_language == "unknown":
+        translation_source_language = "auto"
+
+    # ---------------------------------------------------------
+    # 3. Translate to English pivot if necessary
+    # ---------------------------------------------------------
+    if original_language in ENGLISH_ALIASES:
+        pivot_text = original_text
+    else:
         pivot_text = await _translate_or_fallback(
-            transcript,
-            source_language_code=detected_lang,
+            original_text,
+            source_language_code=translation_source_language,
             target_language_code=PIVOT_LANGUAGE,
         )
-    else:
-        pivot_text = transcript
 
+    # ---------------------------------------------------------
+    # 4. Debug
+    # ---------------------------------------------------------
+    print("NORMALIZED TEXT:", pivot_text)
+    print("ORIGINAL LANGUAGE:", original_language)
+
+    # ---------------------------------------------------------
+    # 5. Return normalized result
+    # ---------------------------------------------------------
     return {
         "text": pivot_text,
-        "original_text": transcript,
-        "original_language": detected_lang,
+        "original_text": original_text,
+        "original_language": original_language,
     }
-
 
 async def prepare_outgoing(
     reply_text_en: str,

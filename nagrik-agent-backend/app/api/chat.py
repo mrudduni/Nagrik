@@ -84,20 +84,48 @@ def _extract_sources(result: dict) -> list[ChatSource]:
 
 async def _collect_attachment_context(payload: ChatRequest) -> dict:
     extracted_fields = {}
-    extracted_text_parts: list[str] = []
+    extracted_text_parts = []
+
+    if not payload.attachments:
+        return {
+            "extracted_fields": {},
+            "extracted_text": "",
+        }
 
     for attachment in payload.attachments:
-        if attachment.type not in ("image", "document") or not attachment.base64_data:
+
+        if attachment.type not in ("image", "document"):
             continue
 
+        if not attachment.base64_data:
+            continue
+
+        mime_type = attachment.mime_type or "image/jpeg"
+
+        if attachment.type == "document":
+            if mime_type != "application/pdf":
+                continue
+
+        if attachment.type == "image":
+            if not mime_type.startswith("image/"):
+                continue
+
         doc_result = await doc_understanding_node(
-            state={"extracted_fields": extracted_fields},
+            state={
+                "extracted_fields": extracted_fields
+            },
             image_base64=attachment.base64_data,
-            mime_type=attachment.mime_type or "image/jpeg",
+            mime_type=mime_type,
         )
-        extracted_fields.update(doc_result.get("extracted_fields", {}))
+
+        extracted_fields.update(
+            doc_result.get("extracted_fields", {})
+        )
+
         if doc_result.get("extracted_text"):
-            extracted_text_parts.append(doc_result["extracted_text"])
+            extracted_text_parts.append(
+                doc_result["extracted_text"]
+            )
 
     return {
         "extracted_fields": extracted_fields,
@@ -186,10 +214,10 @@ async def chat_voice(payload: ChatRequest):
     """
     audio_attachment = next((a for a in payload.attachments if a.type == "audio"), None)
     audio_b64 = audio_attachment.base64_data if audio_attachment else None
-
+    audio_mime_type = audio_attachment.mime_type if audio_attachment else None
     attachment_context = await _collect_attachment_context(payload)
     normalized = await normalize_incoming(
-        text=payload.message, audio_base64=audio_b64, declared_language=payload.language
+        text=payload.message, audio_base64=audio_b64, declared_language=payload.language, mime_type=audio_mime_type,
     )
     graph_text = _build_graph_text(
         normalized["text"],
@@ -215,7 +243,7 @@ async def chat_voice(payload: ChatRequest):
     )
 
     nav_dict = result.get("navigation") or {"action": "none"}
-
+    
     return ChatResponse(
         session_id=payload.session_id,
         reply_text=outgoing["text"],
@@ -227,3 +255,5 @@ async def chat_voice(payload: ChatRequest):
         sources=_extract_sources(result),
         extracted_fields=attachment_context["extracted_fields"],
     )
+
+    
