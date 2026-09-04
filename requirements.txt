@@ -1,0 +1,26 @@
+# ── Core data processing ──────────────────────────────────────────────────────
+pandas>=2.0.0
+openpyxl>=3.1.0
+
+# ── LLM (Gemini 2.5 Flash) ────────────────────────────────────────────────────
+google-genai>=0.8.0
+
+# ── Neo4j Python driver ───────────────────────────────────────────────────────
+neo4j>=5.14.0
+
+# ── Embeddings (local, sentence-transformers) ─────────────────────────────────
+sentence-transformers>=2.7.0
+torch>=2.0.0
+
+# ── FastAPI web framework ─────────────────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-dotenv>=1.0.0
+requests>=2.31.0
+pydantic>=2.6.0
+
+# ── Supabase Auth & DB ────────────────────────────────────────────────────────
+supabase>=2.4.0
+python-jose[cryptography]>=3.3.0

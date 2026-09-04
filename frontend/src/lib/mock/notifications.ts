@@ -1,0 +1,58 @@
+import type { AppNotification } from "@/types"
+
+export const MOCK_NOTIFICATIONS: AppNotification[] = [
+  {
+    id: "nt-1",
+    type: "document-request",
+    title: "Document required: PMAY-U Application",
+    message: "Upload your Property Sale Agreement to continue processing PMAY/2026/DL/90021.",
+    timestamp: "2026-08-24T11:05:00",
+    read: false,
+    href: "/applications/app-90021",
+  },
+  {
+    id: "nt-2",
+    type: "issue-update",
+    title: "Complaint acknowledged",
+    message: "Your pothole report near Green Park Market (CIV/2026/9981) has been assigned to the PWD team.",
+    timestamp: "2026-08-23T09:15:00",
+    read: false,
+    href: "/issues/civ-9981",
+  },
+  {
+    id: "nt-3",
+    type: "scheme-recommendation",
+    title: "New scheme match found",
+    message: "Based on your profile, you are highly eligible for PM Surya Ghar rooftop solar subsidy.",
+    timestamp: "2026-08-20T08:00:00",
+    read: true,
+    href: "/services/sch-solar-rooftop",
+  },
+  {
+    id: "nt-4",
+    type: "application-update",
+    title: "DISCOM review in progress",
+    message: "Your rooftop solar application PMSG/2026/DL/90045 is under feasibility review.",
+    timestamp: "2026-08-21T10:00:00",
+    read: true,
+    href: "/applications/app-90045",
+  },
+  {
+    id: "nt-5",
+    type: "deadline",
+    title: "Scholarship deadline approaching",
+    message: "AICTE Pragati Scholarship applications close on 15 Nov 2026. Complete your draft application.",
+    timestamp: "2026-08-18T07:30:00",
+    read: true,
+    href: "/applications/app-91190",
+  },
+  {
+    id: "nt-6",
+    type: "system",
+    title: "DigiLocker sync complete",
+    message: "3 new verified documents were synced from DigiLocker to your Document Vault.",
+    timestamp: "2026-08-15T06:10:00",
+    read: true,
+    href: "/vault",
+  },
+]
