@@ -10,9 +10,12 @@ nagrik-agent-backend/data/gov_myscheme/
 nagrik-agent-backend/data/.cache/
 
 # =========================
-# ChromaDB / vector database
+# ChromaDB / FAISS / vector database
 # =========================
 nagrik-agent-backend/data/chroma_store/
+backend/complaint_service/data/
+data/
+*.bin
 
 # =========================
 # Python
@@ -65,7 +68,6 @@ next-env.d.ts
 # Testing / coverage
 # =========================
 coverage/
-.nyc_output/
 .nyc_output/
 .eslintcache
 
