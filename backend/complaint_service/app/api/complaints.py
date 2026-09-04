@@ -89,28 +89,44 @@ async def submit_complaint(
     """
     Full complaint pipeline:
     classify → check duplicates → calculate priority → route → set SLA → persist.
+    Compatible with direct API calls and Person 2's Agent backend payload.
     """
+    # Normalize input fields (interop with Person 2 agent backend)
+    desc_text = complaint_in.description or complaint_in.text or complaint_in.raw_input or "Civic Complaint"
+    title_text = complaint_in.title or (desc_text[:60] + "..." if len(desc_text) > 60 else desc_text)
+    raw_text = complaint_in.raw_input or complaint_in.text or desc_text
+
+    # Extract location if provided via nested dict or flat fields
+    loc_dict = complaint_in.location or {}
+    lat = complaint_in.latitude or loc_dict.get("latitude") or loc_dict.get("lat")
+    lon = complaint_in.longitude or loc_dict.get("longitude") or loc_dict.get("lon") or loc_dict.get("lng")
+    ward = complaint_in.ward or loc_dict.get("ward")
+    district = complaint_in.district or loc_dict.get("district") or loc_dict.get("city")
+    state = complaint_in.state or loc_dict.get("state")
+
+    evidence_list = complaint_in.evidence_urls or complaint_in.media_refs or []
+
     # 1 — Classify
     classifier = _get_classifier()
-    classification = await classifier.classify(complaint_in.description)
+    classification = await classifier.classify(desc_text)
     logger.info(f"Classified as {classification.category} (sev={classification.severity})")
 
     # 2 — Route to department
     dept_router = DepartmentRouter()
     department = await dept_router.route_complaint(
-        classification.category, complaint_in.state, complaint_in.district, db
+        classification.category, state, district, db
     )
 
     # 3 — Check duplicates
-    from app.main import get_embedding_service  # avoid circular at module level
+    from app.main import get_embedding_service  # avoid circular import
 
     embedding_svc = get_embedding_service()
     detector = DuplicateDetector(embedding_svc)
     dup_result = await detector.detect_duplicates(
-        complaint_in.description,
+        desc_text,
         classification.category,
-        complaint_in.latitude,
-        complaint_in.longitude,
+        lat,
+        lon,
         db,
     )
 
@@ -129,9 +145,9 @@ async def submit_complaint(
     complaint = Complaint(
         id=uuid.uuid4(),
         citizen_id=complaint_in.citizen_id,
-        title=complaint_in.title,
-        description=complaint_in.description,
-        raw_input=complaint_in.raw_input or complaint_in.description,
+        title=title_text,
+        description=desc_text,
+        raw_input=raw_text,
         category=classification.category,
         sub_category=classification.sub_category,
         severity=classification.severity,
@@ -139,11 +155,11 @@ async def submit_complaint(
         priority_tier=priority_tier,
         status=ComplaintStatus.SUBMITTED.value,
         department_id=department.id if department else None,
-        latitude=complaint_in.latitude,
-        longitude=complaint_in.longitude,
-        ward=complaint_in.ward,
-        district=complaint_in.district,
-        state=complaint_in.state,
+        latitude=lat,
+        longitude=lon,
+        ward=ward,
+        district=district,
+        state=state,
         cluster_id=dup_result.suggested_cluster_id,
         escalation_level=0,
     )
@@ -157,7 +173,7 @@ async def submit_complaint(
         id=uuid.uuid4(),
         complaint_id=complaint.id,
         event_type="CREATED",
-        actor="system",
+        actor="CITIZEN",
         details=f"Complaint submitted. Category={classification.category}, Severity={classification.severity}",
     )
 
@@ -165,14 +181,14 @@ async def submit_complaint(
     db.add(event)
 
     # 8 — Handle evidence URLs
-    if complaint_in.evidence_urls:
-        for url in complaint_in.evidence_urls:
+    if evidence_list:
+        for url in evidence_list:
             evidence = ComplaintEvidence(
                 id=uuid.uuid4(),
                 complaint_id=complaint.id,
-                file_url=url,
+                file_url=str(url),
                 file_type="IMAGE",
-                original_filename=url.split("/")[-1],
+                original_filename=str(url).split("/")[-1],
             )
             db.add(evidence)
 
@@ -192,7 +208,7 @@ async def submit_complaint(
         "category": complaint.category,
         "severity": complaint.severity,
         "priority_tier": complaint.priority_tier,
-        "department": department.name if department else None,
+        "department": department.name if department else "Unassigned",
         "is_duplicate": dup_result.is_duplicate,
         "similar_count": len(dup_result.similar_complaints),
         "sla_deadline": complaint.sla_deadline.isoformat() if complaint.sla_deadline else None,
@@ -269,7 +285,6 @@ async def list_complaints(
     """List complaints with filtering and pagination."""
     stmt = select(Complaint).options(selectinload(Complaint.department))
 
-    # Filters
     if status_filter:
         stmt = stmt.where(Complaint.status == status_filter)
     if category:
@@ -281,15 +296,12 @@ async def list_complaints(
     if citizen_id:
         stmt = stmt.where(Complaint.citizen_id == citizen_id)
 
-    # Count
     count_stmt = select(func.count()).select_from(stmt.subquery())
     total = (await db.execute(count_stmt)).scalar() or 0
 
-    # Sort
     sort_col = getattr(Complaint, sort_by, Complaint.created_at)
     stmt = stmt.order_by(desc(sort_col) if sort_order == "desc" else asc(sort_col))
 
-    # Paginate
     offset = (page - 1) * page_size
     stmt = stmt.offset(offset).limit(page_size)
 
@@ -362,7 +374,6 @@ async def add_evidence(
 ):
     """Attach evidence to a complaint."""
     uid = uuid.UUID(complaint_id)
-    # Verify complaint exists
     complaint = (await db.execute(select(Complaint).where(Complaint.id == uid))).scalar_one_or_none()
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")

@@ -33,7 +33,10 @@ async def lifespan(app: FastAPI):
     """Application startup and shutdown lifecycle."""
     # --- Startup ---
     logger.info("Initializing database...")
-    await init_db()
+    try:
+        await init_db()
+    except Exception as e:
+        logger.warning(f"Database init warning: {e}")
 
     logger.info("Loading FAISS index...")
     svc = get_embedding_service()
@@ -97,16 +100,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Mount Routers ---
+# --- Mount Routers (both /api/v1 and root for maximum client compatibility) ---
 from app.api.complaints import router as complaints_router  # noqa: E402
 from app.api.clusters import router as clusters_router  # noqa: E402
 from app.api.analytics import router as analytics_router  # noqa: E402
 from app.api.admin import router as admin_router  # noqa: E402
 
+# Versioned API routes
 app.include_router(complaints_router, prefix="/api/v1")
 app.include_router(clusters_router, prefix="/api/v1")
 app.include_router(analytics_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+
+# Direct routes (supports Navya's person3_client: http://localhost:8002/complaints)
+app.include_router(complaints_router)
+app.include_router(clusters_router)
+app.include_router(analytics_router)
+app.include_router(admin_router)
 
 
 @app.get("/health", tags=["Health"])
