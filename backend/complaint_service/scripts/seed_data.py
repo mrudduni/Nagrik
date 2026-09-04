@@ -436,7 +436,8 @@ async def seed_data():
             # Add predefined cluster complaints
             for item in seed_complaints:
                 title, desc_t, cat, sev, p_score, tier, st, d_obj, lat, lon, ward, dist, state, cid = item
-                created = now - timedelta(days=np_random_day := (int(sev) * 2))
+                days_back = int(sev) * 2
+                created = now - timedelta(days=days_back)
                 c = Complaint(
                     id=uuid.uuid4(),
                     citizen_id=f"cit_{uuid.uuid4().hex[:8]}",

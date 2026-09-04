@@ -12,3 +12,4 @@ httpx
 apscheduler
 python-multipart
 aiofiles
+aiosqlite
