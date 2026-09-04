@@ -1,8 +1,74 @@
 # Nagrik 🇮🇳
 
-> **Schema-driven, voice-first government form filling platform for Indian citizens.**
+> **AI-powered Digital Citizen Companion — scheme discovery, complaint filing, and application assistance for Indian citizens.**
 
-Nagrik lets a citizen complete government forms (Aadhaar, PAN, Voter ID, …) through a natural voice conversation — on the web or via a phone call — without ever needing to read a form.
+Nagrik lets citizens discover government schemes, file civic complaints, and get application assistance through a natural text or voice conversation, in English, Hindi, Tamil, Marathi, and more.
+
+---
+
+## Quick Start — run everything with one command
+
+**Prerequisites:** Python 3.10+, Node.js 18+
+
+```powershell
+# From the repo root:
+.\start.ps1
+```
+
+Or double-click **`start.bat`**.
+
+This opens separate terminal windows for the complete platform:
+
+| Service | Port | Description |
+|---------|------|-------------|
+| Next.js Frontend | http://localhost:3000 | Citizen App + Government Analytics Dashboard |
+| FastAPI AI Backend | http://127.0.0.1:8000 | Voice & Chatbot Agent, Sarvam STT/TTS |
+| Complaint Microservice | http://localhost:8002 | Person 3 Civic Grievance & SLA Engine |
+
+Open http://localhost:3000 in your browser once services are running.
+
+> **First time only** — install dependencies before running:
+> ```powershell
+> # 1. AI Agent Backend
+> cd nagrik-agent-backend
+> pip install -r requirements.txt
+>
+> # 2. Complaint Backend (Person 3)
+> cd ../backend/complaint_service
+> pip install -r requirements.txt
+>
+> # 3. Frontend
+> cd ../../frontend
+> npm install
+> ```
+
+---
+
+## Manual startup (if you prefer separate terminals)
+
+**Terminal 1 — Backend:**
+```powershell
+cd nagrik-agent-backend
+py -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+**Terminal 2 — Frontend:**
+```powershell
+cd frontend
+npm run dev
+```
+
+---
+
+## Environment setup
+
+Copy and fill in the backend `.env`:
+```powershell
+copy nagrik-agent-backend\.env.example nagrik-agent-backend\.env
+# Then edit .env and set:
+#   OPENROUTER_API_KEY=...
+#   SARVAM_API_KEY=...
+```
 
 ---
 
@@ -10,24 +76,20 @@ Nagrik lets a citizen complete government forms (Aadhaar, PAN, Voter ID, …) th
 
 ```
 Nagrik/
-├── backend/                  # Voice-agent FastAPI server (main application)
-│   ├── agents/               # Gemini function-calling agent
-│   ├── api/routes/           # FastAPI routers (sessions, twilio)
-│   ├── core/                 # Config (pydantic-settings)
-│   ├── db/                   # SQLAlchemy models & DB engine
-│   └── services/             # Schema parser · State manager · Validation
+├── nagrik-agent-backend/     # PRIMARY AI backend (FastAPI + LangGraph)
+│   ├── app/api/              # REST endpoints: /chat /chat/voice /complaints /health
+│   ├── app/graph/            # LangGraph agent: router → responder → tools → navigation
+│   ├── app/rag/              # Tree-RAG retrieval over ChromaDB
+│   ├── app/multilingual/     # Sarvam STT / TTS / translation
+│   └── app/integrations/     # Client stubs for external services
 │
 ├── frontend/                 # Next.js citizen & government portal
 │
-├── schemes_api/              # Knowledge-graph API (Neo4j + Supabase)
-│   ├── main.py               # FastAPI app: scheme search & recommendations
-│   ├── graph.py              # Neo4j vector search + traversal
-│   ├── eligibility.py        # Deterministic eligibility evaluation
-│   ├── auth.py               # Supabase JWT auth
-│   └── models.py             # Pydantic models
-│
-├── ingestion/                # Data pipeline: extract → clean → embed → load
-│
+├── backend/complaint_service/ # Standalone complaint microservice (PostgreSQL, optional)
+├── ingestion/                # Data pipeline: PDFs → ChromaDB embeddings
+├── schemes_api/              # Legacy scheme API (not primary)
+└── docs/                     # INTEGRATION_PLAN.md · INTEGRATION_STATUS.md
+```
 ├── schemas/                  # Government form JSON schemas (source of truth)
 │   ├── aadhaar_enrolment_form1.json
 │   ├── pan_card_49a.json
