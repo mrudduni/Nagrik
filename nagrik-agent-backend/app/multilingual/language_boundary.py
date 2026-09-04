@@ -32,18 +32,24 @@ def detect_text_language(
     Detect the language of text locally using Unicode script ranges.
 
     An explicitly declared language always takes priority.
-    Otherwise detect common Indian scripts and fall back to English.
+    Otherwise detect Indian scripts and use simple scoring
+    for Romanized Indian-language text.
     """
 
     if declared_language and declared_language not in ("auto", "detect"):
         return declared_language
 
-    value = text or ""
+    value = (text or "").strip()
+
+    if not value:
+        return PIVOT_LANGUAGE
+
+    # ---------------------------------------------------------
+    # Indian scripts
+    # ---------------------------------------------------------
 
     # Hindi / Marathi / Nepali / Sanskrit
     if any("\u0900" <= char <= "\u097F" for char in value):
-        # Devanagari alone cannot reliably distinguish Hindi from Marathi.
-        # Without an explicit language, use Hindi as the default.
         return "hi-IN"
 
     # Bengali / Assamese
@@ -74,15 +80,83 @@ def detect_text_language(
     if any("\u0D00" <= char <= "\u0D7F" for char in value):
         return "ml-IN"
 
-    # Hinglish / romanized Indian language
+    # ---------------------------------------------------------
+    # Romanized Indian language detection
+    # ---------------------------------------------------------
+    #
+    # IMPORTANT:
+    # Do NOT classify a message as Hindi just because it
+    # contains words such as "yojana", "bima", "kisan", etc.
+    #
+    # Government scheme names are often Indian words even when
+    # the user's actual question is English.
+    #
+    # Only classify as Hinglish when there are multiple
+    # conversational Hindi indicators.
+    # ---------------------------------------------------------
+
     words = {
         word.strip(".,?!:;()[]{}\"'").lower()
         for word in value.split()
     }
 
-    if words & HINGLISH_HINTS:
+    hinglish_conversation_hints = {
+        "kya",
+        "kaise",
+        "kaisa",
+        "kaisi",
+        "kyun",
+        "kyu",
+        "kab",
+        "kahan",
+        "kahaan",
+        "hai",
+        "hain",
+        "hoga",
+        "hogi",
+        "honge",
+        "milega",
+        "milega",
+        "milta",
+        "milti",
+        "chahiye",
+        "batao",
+        "bataye",
+        "bataiye",
+        "samjhao",
+        "samjha",
+        "mujhe",
+        "mera",
+        "meri",
+        "mere",
+        "aap",
+        "apka",
+        "apki",
+        "ke",
+        "ko",
+        "se",
+        "mein",
+        "me",
+        "par",
+        "wala",
+        "wali",
+        "liye",
+        "nahi",
+        "nahin",
+        "kr",
+        "karna",
+        "karo",
+        "do",
+        "dijiye",
+    }
+
+    hint_count = len(words & hinglish_conversation_hints)
+
+    # Require at least 2 conversational Hindi indicators.
+    if hint_count >= 2:
         return "hi-IN"
 
+    # Otherwise treat Roman/Latin text as English.
     return PIVOT_LANGUAGE
 
 async def _translate_or_fallback(

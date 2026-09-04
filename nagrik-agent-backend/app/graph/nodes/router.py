@@ -14,10 +14,22 @@ Citizen Companion. Classify the citizen's latest message into exactly one \
 of: scheme_query, complaint, application, status_check, general.
 
 - scheme_query: asking about government schemes, eligibility, benefits, comparisons.
-- complaint: reporting a civic issue or grievance.
-- application: wants to start/continue filling an application/form.
-- status_check: checking status of an existing application or complaint.
+- complaint: reporting a civic issue or grievance (pothole, water, garbage,
+             streetlight, noise, encroachment, drainage, electricity, etc.).
+- application: wants to start/continue filling an application/form for a scheme.
+- status_check: checking status of an existing application (APP-*) or
+                complaint (NGR-*), or asking "what happened to my complaint".
 - general: greetings, small talk, or anything not covered above.
+
+Examples:
+  "There is a pothole near my house" → complaint
+  "Mere ghar ke paas paani nahi aa raha" → complaint
+  "What is PM KISAN?" → scheme_query
+  "Am I eligible for Ayushman Bharat?" → scheme_query
+  "I want to apply for the scholarship" → application
+  "Track complaint NGR-ABC123" → status_check
+  "What is the status of my application APP-XYZ?" → status_check
+  "Hello" → general
 """
 
 
