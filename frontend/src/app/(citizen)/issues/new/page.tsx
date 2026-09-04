@@ -58,22 +58,84 @@ export default function ReportIssuePage() {
 
   function handleLocate() {
     setIsLocating(true)
-    setTimeout(() => {
-      setAddress(citizen ? `Near ${citizen.address.line1}, ${citizen.address.ward}` : "Green Park Market Main Rd, South Delhi")
-      setIsLocating(false)
-      toast.success("Location detected")
-    }, 1200)
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const addr = citizen
+            ? `Near ${citizen.address.line1}, ${citizen.address.ward}`
+            : `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`
+          setAddress(addr)
+          setIsLocating(false)
+          toast.success("Location detected")
+        },
+        () => {
+          // Geolocation denied — fall back to profile address
+          setAddress(citizen ? `Near ${citizen.address.line1}, ${citizen.address.ward}` : "")
+          setIsLocating(false)
+          toast.success("Location set from profile")
+        },
+      )
+    } else {
+      setTimeout(() => {
+        setAddress(citizen ? `Near ${citizen.address.line1}, ${citizen.address.ward}` : "")
+        setIsLocating(false)
+        toast.success("Location set from profile")
+      }, 600)
+    }
   }
 
-  function handleVoiceDescribe() {
+  async function handleVoiceDescribe() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast.error("Microphone not supported in this browser")
+      return
+    }
     setIsRecording(true)
-    setTimeout(() => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeType = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find(
+        (t) => MediaRecorder.isTypeSupported(t),
+      ) || ""
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream)
+      const chunks: Blob[] = []
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data) }
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop())
+        const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" })
+        if (blob.size === 0) { setIsRecording(false); return }
+        try {
+          const reader = new FileReader()
+          const base64: string = await new Promise((res, rej) => {
+            reader.onload = () => res((reader.result as string).split(",")[1])
+            reader.onerror = rej
+            reader.readAsDataURL(blob)
+          })
+          const { sendVoiceMessage } = await import("@/services/chat-service")
+          const sessionId = sessionStorage.getItem("nagrik.chat.session_id") ?? `sess_${Date.now()}`
+          const result = await sendVoiceMessage(base64, sessionId, citizen?.id ?? "frontend-citizen")
+          const transcript = result.userMessage?.content ?? result.assistantMessage.content ?? ""
+          if (transcript) {
+            setDescription((prev) => prev ? `${prev} ${transcript}` : transcript)
+            if (!title && transcript.length < 100) setTitle(transcript.slice(0, 80))
+            toast.success("Voice transcribed")
+          }
+        } catch (err) {
+          console.error("STT error:", err)
+          toast.error("Could not transcribe voice. Please type the description.")
+        } finally {
+          setIsRecording(false)
+        }
+      }
+      recorder.start()
+      // Auto-stop after 10 seconds
+      setTimeout(() => {
+        if (recorder.state !== "inactive") recorder.stop()
+      }, 10000)
+    } catch {
       setIsRecording(false)
-      const transcript = "There is a large pothole right outside the market entrance and it's dangerous for two-wheelers, especially at night."
-      setDescription((prev) => (prev ? prev + " " + transcript : transcript))
-      if (!title) setTitle("Pothole near market entrance")
-      toast.success("Voice transcribed to text")
-    }, 2000)
+      toast.error("Microphone access denied. Please allow and try again.")
+    }
   }
 
   function handleFileChosen(e: React.ChangeEvent<HTMLInputElement>) {

@@ -316,6 +316,12 @@ export interface ChatAttachment {
 export interface ChatSource {
   label: string
   href: string
+  /** Ministry or department that owns the scheme */
+  sublabel?: string
+  /** Page reference within the source document */
+  pageRef?: string
+  /** Brief relevant snippet from the source */
+  snippet?: string
 }
 
 export interface ChatMessage {

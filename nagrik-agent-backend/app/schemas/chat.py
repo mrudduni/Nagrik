@@ -17,15 +17,23 @@ class Attachment(BaseModel):
 class ChatRequest(BaseModel):
     session_id: str
     citizen_id: str
-    message: Optional[str] = Field(
-        default=None, description="Text message. Omit if only attachments are sent."
-    )
-    language: Optional[str] = Field(
-    default=None,
-    description="Optional language override. If omitted, language is detected automatically."
-)
-    attachments: list[Attachment] = Field(default_factory=list)
 
+    message: Optional[str] = Field(
+            default=None,
+            description="Text message. Omit if only attachments are sent."
+        )
+
+    language: Optional[str] = Field(
+            default=None,
+            description="Optional language override. If omitted, language is detected automatically."
+        )
+
+    audio_base64: Optional[str] = Field(
+            default=None,   
+            description="Base64 encoded audio for voice chat."
+        )
+        
+    attachments: list[Attachment] = Field(default_factory=list)
 
 class NavigationAction(BaseModel):
     action: Literal[
@@ -45,11 +53,11 @@ class ChatSource(BaseModel):
     page: Optional[int] = None
     snippet: Optional[str] = None
 
-
 class ChatResponse(BaseModel):
     session_id: str
     reply_text: str
     reply_audio_base64: Optional[str] = None
+    transcribed_text: Optional[str] = None
     language: str = "en"
     intent: Optional[str] = None
     navigation: Optional[NavigationAction] = None

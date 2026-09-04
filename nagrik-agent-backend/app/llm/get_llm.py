@@ -53,8 +53,10 @@ def get_llm(model: str | None = None, temperature: float = 0.3, provider: str | 
 
 def get_vision_llm(temperature: float = 0.2):
     """
-    Returns a vision-capable chat model for the doc/image understanding node.
-    Both OpenRouter (many routed models support vision) and Gemini support
-    multimodal input natively, so this reuses the same provider config.
+    Returns a vision-capable model specifically for image/document understanding.
     """
-    return get_llm(temperature=temperature)
+    return get_llm(
+        model="openai/gpt-4o-mini",
+        temperature=temperature,
+        provider="openrouter",
+    )
