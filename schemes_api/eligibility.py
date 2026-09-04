@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
-from api.models import CitizenProfile, RuleEvaluation
+from schemes_api.models import CitizenProfile, RuleEvaluation
 
 VALID_OPERATORS = {"eq", "ne", "lt", "lte", "gt", "gte", "in", "not_in", "contains"}
 

@@ -21,9 +21,9 @@ import uvicorn
 from fastapi import Depends, FastAPI, HTTPException
 from sentence_transformers import SentenceTransformer
 
-from api.auth import get_current_user_id
-from api.eligibility import evaluate_eligibility
-from api.graph import (
+from schemes_api.auth import get_current_user_id
+from schemes_api.eligibility import evaluate_eligibility
+from schemes_api.graph import (
     close_driver,
     get_driver,
     get_recommendations_from_history,
@@ -31,7 +31,7 @@ from api.graph import (
     scheme_exists,
     vector_search,
 )
-from api.models import (
+from schemes_api.models import (
     CitizenProfile,
     HistoryRecommendationRequest,
     SchemeResult,
@@ -41,7 +41,7 @@ from api.models import (
     SimilarScheme,
     UserProfileUpsert,
 )
-from api.supabase_client import get_supabase
+from schemes_api.supabase_client import get_supabase
 
 # ── Embedding model (loaded once at startup) ──────────────────────────────────
 _embed_model: SentenceTransformer | None = None
@@ -342,4 +342,4 @@ async def health():
 # ── Entrypoint ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    uvicorn.run("api.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("schemes_api.main:app", host="0.0.0.0", port=8000, reload=True)
