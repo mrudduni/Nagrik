@@ -1,13 +1,28 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { LandmarkIcon } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Building2, LandmarkIcon, Loader2 } from "lucide-react"
 import { CITIZEN_NAV } from "@/lib/nav-config"
 import { cn } from "@/lib/utils"
+import { useApp } from "@/context/app-provider"
 
 export function CitizenSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { login } = useApp()
+  const [switching, setSwitching] = React.useState(false)
+
+  const handleSwitchToGov = async () => {
+    setSwitching(true)
+    try {
+      await login("officer")
+      router.push("/gov")
+    } catch {
+      setSwitching(false)
+    }
+  }
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card lg:flex">
@@ -40,12 +55,19 @@ export function CitizenSidebar() {
         })}
       </nav>
       <div className="border-t border-border p-3">
-        <Link
-          href="/gov"
-          className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2.5 text-xs text-muted-foreground hover:bg-muted transition-colors"
+        <button
+          type="button"
+          onClick={handleSwitchToGov}
+          disabled={switching}
+          className="flex w-full items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
         >
-          Switch to Government Portal
-        </Link>
+          {switching ? (
+            <Loader2 className="size-3.5 animate-spin text-primary" />
+          ) : (
+            <Building2 className="size-3.5 text-primary" />
+          )}
+          <span>{switching ? "Switching to Gov..." : "Switch to Government Portal"}</span>
+        </button>
       </div>
     </aside>
   )

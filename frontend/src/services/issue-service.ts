@@ -175,7 +175,7 @@ const BACKEND_TO_UI_CAT: Record<string, IssueCategory> = {
 }
 
 export async function getIssue(id: string): Promise<CivicIssue | undefined> {
-  // 1. Try agent backend first for NGR-prefixed IDs
+  // Try backend first for NGR-prefixed IDs (Agent backend)
   if (id.toUpperCase().startsWith("NGR-")) {
     try {
       const record = await apiGet<BackendComplaintStatusRecord>(
@@ -183,11 +183,11 @@ export async function getIssue(id: string): Promise<CivicIssue | undefined> {
       )
       return _backendRecordToIssue(record, "")
     } catch {
-      // Fall through
+      // Not found on agent backend — fall through
     }
   }
 
-  // 2. Try Person 3 complaint service backend (UUIDs or direct complaints)
+  // Try Person 3 Complaint Service
   try {
     const res = await fetch(`${API_BASE}/complaints/${id}`, { cache: "no-store", signal: AbortSignal.timeout(2000) })
     if (res.ok) {
@@ -269,10 +269,9 @@ export async function getIssue(id: string): Promise<CivicIssue | undefined> {
       }
     }
   } catch (err) {
-    // Fall through to mock store
+    // Fallback to local mock store
   }
 
-  // 3. Fallback to in-memory mock store
   return request(() => store.find((i) => i.id === id))
 }
 
