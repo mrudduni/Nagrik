@@ -35,3 +35,12 @@ venv/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# =========================
+# Tests
+# =========================
+test_image.jpg
+test_tts.py
+test_voice.m4a
+tts_test.wav
+pdf_base64.txt
