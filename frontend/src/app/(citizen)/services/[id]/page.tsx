@@ -27,7 +27,7 @@ import { StatusBadge } from "@/components/shared/status-badge"
 import { ErrorState } from "@/components/shared/error-state"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useApp } from "@/context/app-provider"
-import { getScheme, checkEligibility } from "@/services/scheme-service"
+import { getScheme, checkEligibility, trackSchemeView } from "@/services/scheme-service"
 import { formatCompactNumber, formatDate } from "@/lib/format"
 import type { EligibilityResult, Scheme } from "@/types"
 import { cn } from "@/lib/utils"
@@ -46,6 +46,8 @@ export default function SchemeDetailPage() {
   React.useEffect(() => {
     if (scheme && session?.citizen) {
       checkEligibility(scheme.id, session.citizen).then(setEligibility)
+      // Track this view in the knowledge graph (feeds recommendations)
+      trackSchemeView(scheme.id, session.citizen.id)
     }
   }, [scheme, session])
 

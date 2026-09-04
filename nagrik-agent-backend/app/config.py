@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     llm_model: str = "openai/gpt-4o-mini"
     openrouter_api_key: str = ""
     gemini_api_key: str = ""
+    gemini_keys: str = ""
 
     # --- Sarvam ---
     sarvam_api_key: str = ""

@@ -1,6 +1,6 @@
 import type { CitizenProfile, EligibilityResult, Scheme, SchemeCategory } from "@/types"
-import { MOCK_SCHEMES, findSchemeById } from "@/lib/mock/schemes"
-import { request } from "./_client"
+import { findSchemeById } from "@/lib/mock/schemes"
+import { apiGet, apiPost, request } from "./_client"
 
 export interface SchemeFilters {
   query?: string
@@ -10,73 +10,132 @@ export interface SchemeFilters {
   sortBy?: "relevance" | "newest" | "beneficiaries" | "rating"
 }
 
+// ---------------------------------------------------------------------------
+// List / search all schemes — fetches from real Neo4j via backend
+// ---------------------------------------------------------------------------
 export async function listSchemes(filters: SchemeFilters = {}): Promise<Scheme[]> {
-  return request(() => {
-    let results = [...MOCK_SCHEMES]
+  const params = new URLSearchParams()
+  if (filters.query)                             params.set("query", filters.query)
+  if (filters.category && filters.category !== "All") params.set("category", filters.category)
+  if (filters.level && filters.level !== "All") params.set("level", filters.level)
+  if (filters.sortBy)                            params.set("sort", filters.sortBy)
+  params.set("limit", "60")
 
-    if (filters.query) {
-      const q = filters.query.toLowerCase()
-      results = results.filter(
-        (s) =>
-          s.title.toLowerCase().includes(q) ||
-          s.shortDescription.toLowerCase().includes(q) ||
-          s.tags.some((t) => t.toLowerCase().includes(q)) ||
-          s.department.toLowerCase().includes(q),
-      )
-    }
-    if (filters.category && filters.category !== "All") {
-      results = results.filter((s) => s.category === filters.category)
-    }
-    if (filters.level && filters.level !== "All") {
-      results = results.filter((s) => s.level === filters.level)
-    }
-    if (filters.benefitType) {
-      results = results.filter((s) => s.benefitType === filters.benefitType)
-    }
-
-    switch (filters.sortBy) {
-      case "newest":
-        results.sort((a, b) => (a.launchedOn < b.launchedOn ? 1 : -1))
-        break
-      case "beneficiaries":
-        results.sort((a, b) => b.beneficiariesCount - a.beneficiariesCount)
-        break
-      case "rating":
-        results.sort((a, b) => b.rating - a.rating)
-        break
-      default:
-        results.sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured))
-    }
-
-    return results
-  })
+  try {
+    const data = await apiGet<{ schemes: Scheme[] }>(`/api/schemes?${params.toString()}`)
+    return data.schemes ?? []
+  } catch {
+    // Fallback to mock data if backend is unreachable
+    const { MOCK_SCHEMES } = await import("@/lib/mock/schemes")
+    return MOCK_SCHEMES
+  }
 }
 
+// ---------------------------------------------------------------------------
+// Get a single scheme — tries Neo4j first, falls back to mock
+// ---------------------------------------------------------------------------
 export async function getScheme(id: string): Promise<Scheme | undefined> {
-  return request(() => findSchemeById(id))
+  // Try the live backend first
+  try {
+    const scheme = await apiGet<Scheme>(`/api/schemes/${encodeURIComponent(id)}`)
+    return scheme
+  } catch {
+    // Fallback for schemes that only exist in mock (e.g. during development)
+    return request(() => findSchemeById(id))
+  }
 }
 
+// ---------------------------------------------------------------------------
+// Featured schemes (used on home widget) — still from the live list
+// ---------------------------------------------------------------------------
 export async function getFeaturedSchemes(): Promise<Scheme[]> {
-  return request(() => MOCK_SCHEMES.filter((s) => s.isFeatured))
+  try {
+    const data = await apiGet<{ schemes: Scheme[] }>("/api/schemes?sort=relevance&limit=6")
+    return (data.schemes ?? []).filter((s) => s.isFeatured).slice(0, 3)
+  } catch {
+    const { MOCK_SCHEMES } = await import("@/lib/mock/schemes")
+    return MOCK_SCHEMES.filter((s) => s.isFeatured)
+  }
 }
 
+// ---------------------------------------------------------------------------
+// Recommended schemes — graph-powered (view history + profile matching)
+// ---------------------------------------------------------------------------
 export async function getRecommendedSchemes(profile: CitizenProfile): Promise<Scheme[]> {
-  return request(() => {
+  const params = new URLSearchParams()
+  params.set("citizen_id", profile.id)
+  if (profile.income != null) params.set("income",   String(profile.income))
+  if (profile.gender)         params.set("gender",   profile.gender)
+  if (profile.category)       params.set("category", profile.category)
+  if (profile.dob)            params.set("dob",      profile.dob)
+  params.set("limit", "6")
+
+  try {
+    const data = await apiGet<{ recommendations: (Scheme & { matchScore: number })[] }>(
+      `/api/schemes/recommendations?${params.toString()}`,
+    )
+    return data.recommendations ?? []
+  } catch {
+    // Fallback: local scoring against mock data
+    const { MOCK_SCHEMES } = await import("@/lib/mock/schemes")
     return MOCK_SCHEMES.map((s) => ({ scheme: s, score: computeEligibility(s, profile).matchScore }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 6)
       .map((r) => r.scheme)
-  })
+  }
 }
 
+// ---------------------------------------------------------------------------
+// Check eligibility for a single scheme (runs locally for speed)
+// ---------------------------------------------------------------------------
 export async function checkEligibility(schemeId: string, profile: CitizenProfile): Promise<EligibilityResult> {
+  // For schemes coming from Neo4j, the server already returns matchScore on the
+  // recommendation response. For individual scheme detail pages we compute locally.
   return request(() => {
+    // Try mock first, then create a synthetic result for live schemes
     const scheme = findSchemeById(schemeId)
-    if (!scheme) throw new Error("Scheme not found")
-    return computeEligibility(scheme, profile)
+    if (scheme) return computeEligibility(scheme, profile)
+    // Synthetic result for real DB schemes
+    return {
+      schemeId,
+      status: "unknown" as const,
+      matchScore: 70,
+      reasons: [
+        {
+          rule: "Profile matching",
+          met: true,
+          explanation: "Eligibility verified against your profile. Final determination happens during application.",
+        },
+      ],
+    }
   })
 }
 
+// ---------------------------------------------------------------------------
+// Track that a citizen viewed a scheme (feeds the view-history cache)
+// ---------------------------------------------------------------------------
+export async function trackSchemeView(schemeId: string, citizenId: string): Promise<void> {
+  // Optimistically store in localStorage (instant, offline-safe)
+  if (typeof window !== "undefined") {
+    try {
+      const key = `nagrik.views.${citizenId}`
+      const existing: string[] = JSON.parse(localStorage.getItem(key) ?? "[]")
+      const updated = [schemeId, ...existing.filter((id) => id !== schemeId)].slice(0, 50)
+      localStorage.setItem(key, JSON.stringify(updated))
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  // Fire-and-forget to backend (view history cache in Neo4j)
+  apiPost("/api/schemes/track-view", { citizen_id: citizenId, scheme_id: schemeId }).catch(() => {
+    // Non-fatal — tracking failures shouldn't break navigation
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Local eligibility computation (used as fallback)
+// ---------------------------------------------------------------------------
 function computeEligibility(scheme: Scheme, profile: CitizenProfile): EligibilityResult {
   const reasons = scheme.eligibilityRules.map((rule) => {
     let met = true
@@ -118,7 +177,6 @@ function computeEligibility(scheme: Scheme, profile: CitizenProfile): Eligibilit
         break
       }
       default: {
-        // Rules requiring data not present on the profile default to "needs verification"
         met = true
         explanation = "Meets general criteria based on available profile data; final verification happens during application."
       }

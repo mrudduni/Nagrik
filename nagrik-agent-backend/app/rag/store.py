@@ -63,18 +63,18 @@ def add_chunks(chunks: list[DocChunk]) -> int:
 
     for i, c in enumerate(chunks):
         raw_id = "|".join([
-        c.scheme or "unknown",
-        c.source_file or "",
-        str(c.page or 0),
-        str(i),
-        c.text[:200],
+            c.scheme or "unknown",
+            c.source_file or "",
+            str(c.page or 0),
+            str(i),
+            c.text[:200],
         ])
 
-    chunk_id = hashlib.sha256(
-        raw_id.encode("utf-8")
-    ).hexdigest()
+        chunk_id = hashlib.sha256(
+            raw_id.encode("utf-8")
+        ).hexdigest()
 
-    ids.append(chunk_id)
+        ids.append(chunk_id)
 
     documents = [c.text for c in chunks]
 

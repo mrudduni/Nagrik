@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SchemeFiltersBar } from "@/components/citizen/services/scheme-filters"
 import { SchemeCard } from "@/components/citizen/services/scheme-card"
 import { useApp } from "@/context/app-provider"
-import { listSchemes, getRecommendedSchemes, checkEligibility, type SchemeFilters } from "@/services/scheme-service"
+import { listSchemes, getRecommendedSchemes, type SchemeFilters } from "@/services/scheme-service"
 import type { Scheme } from "@/types"
 
 function ServicesPageInner() {
@@ -39,16 +39,15 @@ function ServicesPageInner() {
   React.useEffect(() => {
     let active = true
     if (tab === "recommended" && citizen) {
-      getRecommendedSchemes(citizen).then(async (list) => {
+      getRecommendedSchemes(citizen).then((list) => {
         if (!active) return
         setSchemes(list)
+        // The backend already embeds matchScore on each recommendation object
         const scores: Record<string, number> = {}
-        await Promise.all(
-          list.map(async (s) => {
-            const result = await checkEligibility(s.id, citizen)
-            scores[s.id] = result.matchScore
-          }),
-        )
+        list.forEach((s) => {
+          const ms = (s as Scheme & { matchScore?: number }).matchScore
+          if (ms != null) scores[s.id] = ms
+        })
         if (active) setMatchScores(scores)
       })
     } else {

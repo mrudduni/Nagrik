@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils"
 import { useApp } from "@/context/app-provider"
 import { initials } from "@/lib/format"
 
+import { FormattedMessage } from "./formatted-message"
+
 const ATTACHMENT_ICON = {
   image: ImageIcon,
   document: FileText,
@@ -51,10 +53,10 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
         {/* Message bubble */}
         <div
           className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap",
+            "rounded-2xl px-4 py-3 text-sm leading-relaxed",
             isUser
               ? "rounded-tr-sm bg-primary text-primary-foreground"
-              : "rounded-tl-sm bg-muted text-foreground",
+              : "rounded-tl-sm border border-border/60 bg-muted/60 text-foreground shadow-xs",
           )}
         >
           {message.attachment && AttachmentIcon && (
@@ -70,7 +72,7 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
               {message.attachment.name}
             </div>
           )}
-          {message.content}
+          <FormattedMessage content={message.content} isUser={isUser} />
         </div>
 
         {/* Rich source cards */}

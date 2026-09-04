@@ -29,7 +29,6 @@ _BUILDERS = {
 }
 
 
-@lru_cache(maxsize=8)
 def get_llm(model: str | None = None, temperature: float = 0.3, provider: str | None = None):
     """
     Returns a LangChain chat-model instance for the configured provider.

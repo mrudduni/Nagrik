@@ -4,7 +4,6 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { LandmarkIcon } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { SUGGESTED_QUERIES } from "@/lib/mock/chat"
 import { sendMessage, sendVoiceMessage, type BackendNavigationAction } from "@/services/chat-service"
 import type { ChatMessage } from "@/types"
 import { ChatMessageBubble } from "./chat-message-bubble"
@@ -203,8 +202,6 @@ export function ChatPanel() {
     }
   }
 
-  const showSuggestions = messages.length === 1
-
   return (
     <div className="flex h-full flex-col">
       {/* Messages */}
@@ -233,22 +230,6 @@ export function ChatPanel() {
                 />
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Suggested queries */}
-        {showSuggestions && (
-          <div className="flex flex-wrap gap-2 pl-11">
-            {SUGGESTED_QUERIES.map((query) => (
-              <button
-                key={query}
-                onClick={() => handleSend(query)}
-                disabled={isTyping}
-                className="rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
-              >
-                {query}
-              </button>
-            ))}
           </div>
         )}
       </div>

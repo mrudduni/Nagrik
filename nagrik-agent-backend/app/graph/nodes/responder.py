@@ -75,29 +75,25 @@ async def responder_node(state: AgentState) -> dict:
     llm_with_tools = llm.bind_tools(ALL_TOOLS)
 
     intent = state.get("intent", "general")
-    system = SystemMessage(content=SYSTEM_PROMPT.format(intent=intent))
 
-    # Include extracted_fields context so the LLM can pass them to application tools
-    messages = list(state["messages"])
+    # Build context note to inject into system prompt (not as mid-convo system msg)
     extracted = state.get("extracted_fields") or {}
     citizen_id = state.get("citizen_id", "unknown")
-
-    # Prepend a context note when fields were extracted from uploaded docs
     context_parts = []
     if extracted:
         field_summary = ", ".join(f"{k}={v}" for k, v in extracted.items() if v)
         if field_summary:
             context_parts.append(
-                f"[Document fields already extracted: {field_summary}]"
-                " — pass these as prefilled_fields when calling start_application."
+                f"Document fields already extracted: {field_summary}"
+                " - pass these as prefilled_fields when calling start_application."
             )
     if citizen_id and citizen_id != "unknown":
-        context_parts.append(f"[Citizen ID: {citizen_id}]")
+        context_parts.append(f"Citizen ID: {citizen_id}")
 
-    if context_parts:
-        from langchain_core.messages import SystemMessage as SM
-        messages = [SM(content="\n".join(context_parts))] + messages
+    context_note = ("\n\nCONTEXT: " + " | ".join(context_parts)) if context_parts else ""
+    system = SystemMessage(content=SYSTEM_PROMPT.format(intent=intent) + context_note)
 
+    messages = list(state["messages"])
     response = await llm_with_tools.ainvoke([system] + messages)
 
     tool_calls_made = state.get("tool_calls_made", [])
@@ -105,3 +101,4 @@ async def responder_node(state: AgentState) -> dict:
         tool_calls_made = tool_calls_made + [tc["name"] for tc in response.tool_calls]
 
     return {"messages": [response], "tool_calls_made": tool_calls_made}
+

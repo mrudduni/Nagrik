@@ -13,6 +13,7 @@ nagrik-agent-backend/data/.cache/
 # ChromaDB / FAISS / vector database
 # =========================
 nagrik-agent-backend/data/chroma_store/
+nagrik-agent-backend/app/rag/chroma_db/
 backend/complaint_service/data/
 data/
 *.bin
@@ -43,6 +44,9 @@ test_voice.m4a
 tts_test.wav
 voice_response.wav
 pdf_base64.txt
+scratch/
+frontend/AGENTS.md
+frontend/CLAUDE.md
 
 # =========================
 # Logs

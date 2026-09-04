@@ -62,6 +62,22 @@ def _build_graph_text(
     return "\n\n".join(parts)
 
 
+def _clean_text_content(content) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        texts = []
+        for item in content:
+            if isinstance(item, str):
+                texts.append(item)
+            elif isinstance(item, dict) and "text" in item:
+                texts.append(str(item["text"]))
+            else:
+                texts.append(str(item))
+        return "\n".join(texts)
+    return str(content or "")
+
+
 def _coerce_tool_payload(content) -> dict | None:
     if isinstance(content, dict):
         return content
@@ -89,8 +105,9 @@ def _extract_sources(result: dict) -> list[ChatSource]:
             continue
 
         for chunk in payload.get("chunks", []):
+            scheme_title = chunk.get("scheme_name") or chunk.get("scheme")
             key = (
-                chunk.get("scheme"),
+                scheme_title,
                 chunk.get("source_file"),
                 chunk.get("source_url"),
                 chunk.get("page"),
@@ -113,13 +130,13 @@ def _extract_sources(result: dict) -> list[ChatSource]:
 
             sources.append(
                 ChatSource(
-                    scheme=chunk.get("scheme"),
+                    scheme=scheme_title,
                     ministry=chunk.get("ministry"),
                     department=chunk.get("department"),
                     source_file=source_file,
                     source_url=chunk.get("source_url"),
                     page=chunk.get("page"),
-                    snippet=(chunk.get("text") or "")[:300],
+                    snippet=(chunk.get("summary") or chunk.get("text") or "")[:300],
                 )
             )
 
@@ -308,22 +325,23 @@ async def chat(payload: ChatRequest):
         ) from exc
 
     reply_message = result["messages"][-1]
+    reply_text_raw = _clean_text_content(reply_message.content)
 
     try:
         outgoing = await prepare_outgoing(
-            reply_text_en=reply_message.content,
+            reply_text_en=reply_text_raw,
             target_language=normalized["original_language"],
             want_audio=False,
         )
     except Exception as exc:
         logger.warning("Translation failed, returning English: %s", repr(exc))
-        outgoing = {"text": reply_message.content, "audio_base64": None}
+        outgoing = {"text": reply_text_raw, "audio_base64": None}
 
     nav_dict = result.get("navigation") or {"action": "none"}
 
     return ChatResponse(
         session_id=payload.session_id,
-        reply_text=outgoing["text"],
+        reply_text=_clean_text_content(outgoing["text"]),
         language=normalized["original_language"],
         intent=result.get("intent"),
         navigation=NavigationAction(**nav_dict),
@@ -401,22 +419,23 @@ async def chat_voice(payload: ChatRequest):
         ) from exc
 
     reply_message = result["messages"][-1]
+    reply_text_raw = _clean_text_content(reply_message.content)
 
     try:
         outgoing = await prepare_outgoing(
-            reply_text_en=reply_message.content,
+            reply_text_en=reply_text_raw,
             target_language=normalized["original_language"],
             want_audio=True,
         )
     except Exception as exc:
         logger.warning("TTS failed: %s", repr(exc))
-        outgoing = {"text": reply_message.content, "audio_base64": None}
+        outgoing = {"text": reply_text_raw, "audio_base64": None}
 
     nav_dict = result.get("navigation") or {"action": "none"}
 
     return ChatResponse(
         session_id=payload.session_id,
-        reply_text=outgoing["text"],
+        reply_text=_clean_text_content(outgoing["text"]),
         reply_audio_base64=outgoing.get("audio_base64"),
         transcribed_text=normalized["original_text"],
         language=normalized["original_language"],
