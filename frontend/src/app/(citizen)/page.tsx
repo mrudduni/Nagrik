@@ -5,7 +5,7 @@ import { ChatPanel } from "@/components/citizen/chat/chat-panel"
 import { HomeWidgets } from "@/components/citizen/home/home-widgets"
 
 export default function CitizenHomePage() {
-  const { session } = useApp()
+  const { session, t } = useApp()
   const firstName = session?.citizen?.name.split(" ")[0]
 
   return (
@@ -13,9 +13,9 @@ export default function CitizenHomePage() {
       <div className="flex h-[70svh] min-h-[420px] flex-col lg:h-auto lg:min-h-0 lg:flex-1">
         <div className="mb-3 shrink-0">
           <h1 className="text-lg font-semibold tracking-tight">
-            {firstName ? `Namaste, ${firstName}` : "Namaste"} <span className="wave">👋</span>
+            {firstName ? `${t.chat.greeting}, ${firstName}` : t.chat.greeting} <span className="wave">👋</span>
           </h1>
-          <p className="text-sm text-muted-foreground">Ask anything about schemes, applications, or civic issues.</p>
+          <p className="text-sm text-muted-foreground">{t.chat.subtitle}</p>
         </div>
         <div className="min-h-0 flex-1">
           <ChatPanel />

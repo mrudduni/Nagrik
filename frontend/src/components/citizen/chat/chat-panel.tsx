@@ -68,14 +68,15 @@ function getSuggestedActionFromNavigation(
   }
 }
 
-// ─── Welcome message ──────────────────────────────────────────────────────────
+// ─── Welcome message helper ───────────────────────────────────────────────────
 
-const WELCOME_MESSAGE: ChatMessage = {
-  id: "welcome",
-  role: "assistant",
-  content:
-    "Namaste! I'm your NAGRIK AI assistant. I can help you discover government schemes, check eligibility, fill out applications, track their status, or report a civic issue — in text or voice. What would you like help with today?",
-  timestamp: "",
+function createWelcomeMessage(content: string): ChatMessage {
+  return {
+    id: "welcome",
+    role: "assistant",
+    content,
+    timestamp: "",
+  }
 }
 
 // ─── Error messages ───────────────────────────────────────────────────────────
@@ -106,9 +107,22 @@ function makeErrorMessage(error: unknown): string {
 // ─── ChatPanel ────────────────────────────────────────────────────────────────
 
 export function ChatPanel() {
-  const { session } = useApp()
+  const { session, language, t } = useApp()
 
-  const [messages, setMessages] = React.useState<ChatMessage[]>([WELCOME_MESSAGE])
+  const [messages, setMessages] = React.useState<ChatMessage[]>([
+    createWelcomeMessage(t.chat.welcome_message),
+  ])
+
+  // Update welcome message if only welcome message exists when language changes
+  React.useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].id === "welcome") {
+        return [createWelcomeMessage(t.chat.welcome_message)]
+      }
+      return prev
+    })
+  }, [t.chat.welcome_message])
+
   const [isTyping, setIsTyping] = React.useState(false)
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const idCounter = React.useRef(0)
@@ -147,7 +161,7 @@ export function ChatPanel() {
         text,
         sessionIdRef.current,
         citizenId,
-        null,
+        language,
         attachment,
       )
       const suggestedAction = getSuggestedActionFromNavigation(result.navigation)
@@ -190,7 +204,7 @@ export function ChatPanel() {
         audioBase64,
         sessionIdRef.current,
         citizenId,
-        null,
+        language,
         mimeType,
       )
       const suggestedAction = getSuggestedActionFromNavigation(result.navigation)
@@ -211,6 +225,7 @@ export function ChatPanel() {
         assistantMsg.id,
         assistantMsg.content,
         assistantMsg.audioBase64,
+        language,
       )
     } catch (error) {
       console.error("Voice message failed:", error)
@@ -268,8 +283,7 @@ export function ChatPanel() {
           disabled={isTyping}
         />
         <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          NAGRIK AI can make mistakes. Always verify critical information from
-          official sources.
+          {t.chat.disclaimer}
         </p>
       </div>
     </div>

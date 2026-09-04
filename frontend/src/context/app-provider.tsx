@@ -4,6 +4,7 @@ import * as React from "react"
 import type { AppNotification, AuthSession, LanguageCode, UserRole } from "@/types"
 import * as authService from "@/services/auth-service"
 import * as notificationService from "@/services/notification-service"
+import { getTranslation, type TranslationDictionary } from "@/lib/i18n"
 
 interface AppContextValue {
   session: AuthSession | null
@@ -12,6 +13,8 @@ interface AppContextValue {
   logout: () => void
   language: LanguageCode
   setLanguage: (lang: LanguageCode) => void
+  t: TranslationDictionary
+  translations: TranslationDictionary
   notifications: AppNotification[]
   unreadCount: number
   refreshNotifications: () => Promise<void>
@@ -88,6 +91,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const unreadCount = notifications.filter((n) => !n.read).length
+  const translations = React.useMemo(() => getTranslation(language), [language])
 
   const value: AppContextValue = {
     session,
@@ -96,6 +100,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     logout,
     language,
     setLanguage,
+    t: translations,
+    translations,
     notifications,
     unreadCount,
     refreshNotifications,

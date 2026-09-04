@@ -11,7 +11,7 @@ import { useApp } from "@/context/app-provider"
 export function CitizenSidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { login } = useApp()
+  const { login, t } = useApp()
   const [switching, setSwitching] = React.useState(false)
 
   const handleSwitchToGov = async () => {
@@ -22,6 +22,15 @@ export function CitizenSidebar() {
     } catch {
       setSwitching(false)
     }
+  }
+
+  const getNavLabel = (href: string, fallback: string) => {
+    if (href === "/") return t.nav.ai_assistant
+    if (href === "/services") return t.nav.services
+    if (href === "/applications") return t.nav.applications
+    if (href === "/issues") return t.nav.issues
+    if (href === "/profile") return t.nav.profile
+    return fallback
   }
 
   return (
@@ -39,6 +48,7 @@ export function CitizenSidebar() {
         {CITIZEN_NAV.map((item) => {
           const active = item.matchPrefix ? pathname.startsWith(item.href) && item.href !== "/" : pathname === item.href
           const Icon = item.icon
+          const label = getNavLabel(item.href, item.label)
           return (
             <Link
               key={item.href}
@@ -49,7 +59,7 @@ export function CitizenSidebar() {
               )}
             >
               <Icon className="size-4.5" />
-              {item.label}
+              {label}
             </Link>
           )
         })}
@@ -66,7 +76,7 @@ export function CitizenSidebar() {
           ) : (
             <Building2 className="size-3.5 text-primary" />
           )}
-          <span>{switching ? "Switching to Gov..." : "Switch to Government Portal"}</span>
+          <span>{switching ? t.nav.switching_to_gov : t.nav.switch_to_gov}</span>
         </button>
       </div>
     </aside>

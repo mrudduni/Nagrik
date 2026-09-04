@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import { useApp } from "@/context/app-provider"
 
 export interface PendingAttachment {
   type: "image" | "document"
@@ -29,7 +30,7 @@ interface VoiceMessage {
 export function ChatComposer({
   onSend,
   onVoiceSend,
-  disabled,
+  disabled = false,
 }: {
   onSend: (
     text: string,
@@ -38,6 +39,7 @@ export function ChatComposer({
   onVoiceSend?: (voice: VoiceMessage) => void
   disabled?: boolean
 }) {
+  const { t } = useApp()
   const [value, setValue] = React.useState("")
   const [attachment, setAttachment] =
     React.useState<PendingAttachment | undefined>()
@@ -393,7 +395,7 @@ export function ChatComposer({
 
       {isProcessingVoice && (
         <div className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-          Processing your voice message...
+          {t.chat.voice_processing}
         </div>
       )}
 
@@ -436,7 +438,7 @@ export function ChatComposer({
             fileInputRef.current?.click()
           }
           disabled={disabled}
-          title="Attach image"
+          title={t.chat.attach_image}
         >
           <ImagePlus className="size-4.5" />
         </Button>
@@ -450,7 +452,7 @@ export function ChatComposer({
             docInputRef.current?.click()
           }
           disabled={disabled}
-          title="Attach document"
+          title={t.chat.attach_doc}
         >
           <Paperclip className="size-4.5" />
         </Button>
@@ -470,7 +472,7 @@ export function ChatComposer({
               handleSend()
             }
           }}
-          placeholder="Ask about schemes, applications, or report an issue..."
+          placeholder={t.chat.placeholder}
           className="max-h-32 min-h-9 flex-1 resize-none border-0 bg-transparent p-1.5 shadow-none focus-visible:ring-0"
           rows={1}
           disabled={disabled}
@@ -486,7 +488,7 @@ export function ChatComposer({
             disabled ||
             isProcessingVoice
           }
-          title="Voice input"
+          title={t.chat.voice_input}
         >
           <Mic className="size-4.5" />
         </Button>

@@ -23,7 +23,7 @@ import type { Application, CivicIssue, Scheme } from "@/types"
 export function SearchCommand({ scope = "citizen" }: { scope?: "citizen" | "gov" }) {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
-  const { session } = useApp()
+  const { session, t } = useApp()
   const citizenId = session?.citizen?.id
 
   const [schemes, setSchemes] = React.useState<Scheme[]>([])
@@ -68,12 +68,12 @@ export function SearchCommand({ scope = "citizen" }: { scope?: "citizen" | "gov"
         className="h-9 w-full max-w-sm justify-start gap-2 text-muted-foreground sm:w-64"
       >
         <Search className="size-4" />
-        <span className="hidden sm:inline">Search NAGRIK...</span>
+        <span className="hidden sm:inline">{t.topbar.search_placeholder}</span>
         <span className="sm:hidden">Search...</span>
         <kbd className="ml-auto hidden rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] sm:inline">⌘K</kbd>
       </Button>
-      <CommandDialog open={open} onOpenChange={setOpen} title="Search NAGRIK" description="Search schemes, applications, and civic issues">
-        <CommandInput placeholder={scope === "gov" ? "Search complaints, wards, departments..." : "Search schemes, applications, complaints..."} />
+      <CommandDialog open={open} onOpenChange={setOpen} title={t.topbar.search_placeholder} description="Search schemes, applications, and civic issues">
+        <CommandInput placeholder={scope === "gov" ? "Search complaints, wards, departments..." : t.topbar.search_placeholder} />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
 

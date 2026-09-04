@@ -14,7 +14,7 @@ import { listIssues, statusMeta } from "@/services/issue-service"
 import type { Application, CivicIssue, Scheme } from "@/types"
 
 export function HomeWidgets() {
-  const { session } = useApp()
+  const { session, t } = useApp()
   const citizen = session?.citizen
   const [applications, setApplications] = React.useState<Application[] | null>(null)
   const [schemes, setSchemes] = React.useState<Scheme[] | null>(null)
@@ -35,7 +35,7 @@ export function HomeWidgets() {
     <div className="space-y-4">
       <WidgetCard
         icon={FileStack}
-        title="My Applications"
+        title={t.nav.applications}
         href="/applications"
         loading={!applications}
       >
@@ -49,10 +49,10 @@ export function HomeWidgets() {
             <p className="text-xs text-muted-foreground">{applications?.length} total applications</p>
           </div>
         )}
-        {!activeApp && applications && <p className="text-sm text-muted-foreground">No applications yet.</p>}
+        {!activeApp && applications && <p className="text-sm text-muted-foreground">{t.widgets.no_applications}</p>}
       </WidgetCard>
 
-      <WidgetCard icon={Sparkles} title="Recommended For You" href="/services?tab=recommended" loading={!schemes}>
+      <WidgetCard icon={Sparkles} title={t.widgets.recommended_schemes} href="/services?tab=recommended" loading={!schemes}>
         {topScheme && (
           <div className="space-y-1.5">
             <p className="text-sm font-medium leading-snug">{topScheme.title}</p>
@@ -62,14 +62,14 @@ export function HomeWidgets() {
         )}
       </WidgetCard>
 
-      <WidgetCard icon={MapPinned} title="Civic Issues" href="/issues" loading={!issues}>
+      <WidgetCard icon={MapPinned} title={t.nav.issues} href="/issues" loading={!issues}>
         {recentIssue ? (
           <div className="space-y-2">
             <p className="text-sm font-medium leading-snug">{recentIssue.title}</p>
             <StatusBadge {...statusMeta(recentIssue.status)} />
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No issues reported yet.</p>
+          <p className="text-sm text-muted-foreground">{t.widgets.no_issues}</p>
         )}
       </WidgetCard>
     </div>

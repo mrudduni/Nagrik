@@ -34,7 +34,7 @@ const ATTACHMENT_ICON = {
 
 export function ChatMessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user"
-  const { session } = useApp()
+  const { session, language, t } = useApp()
   const AttachmentIcon =
     message.attachment ? ATTACHMENT_ICON[message.attachment.type] : null
 
@@ -43,19 +43,25 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
   const [isPaused, setIsPaused] = React.useState<boolean>(ttsPlayer.isPaused)
 
   React.useEffect(() => {
-    return ttsPlayer.subscribe(() => {
+    const unsub = ttsPlayer.subscribe(() => {
       setActiveId(ttsPlayer.activeId)
       setIsPlaying(ttsPlayer.isPlaying)
       setIsPaused(ttsPlayer.isPaused)
     })
+    return () => unsub()
   }, [])
 
-  const isCurrentPlaying = activeId === message.id && isPlaying
-  const isCurrentPaused = activeId === message.id && isPaused
-  const isCurrentActive = activeId === message.id && (isPlaying || isPaused)
+  const isCurrentMessage = activeId === message.id
+  const isCurrentPlaying = isCurrentMessage && isPlaying
+  const isCurrentPaused = isCurrentMessage && isPaused
 
   return (
-    <div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
+    <div
+      className={cn(
+        "flex gap-3 text-sm",
+        isUser ? "flex-row-reverse" : "flex-row",
+      )}
+    >
       <Avatar className="size-8 shrink-0">
         {isUser ? (
           <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
@@ -109,10 +115,10 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
                     size="sm"
                     onClick={() => ttsPlayer.pause()}
                     className="h-6 px-2 gap-1 rounded-full text-[11px] bg-primary/15 text-primary hover:bg-primary/25 font-medium transition-colors"
-                    title="Pause voice"
+                    title={t.chat.pause}
                   >
                     <Pause className="size-3 fill-current" />
-                    Pause
+                    {t.chat.pause}
                   </Button>
                   <Button
                     type="button"
@@ -120,7 +126,7 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
                     size="sm"
                     onClick={() => ttsPlayer.stop()}
                     className="h-6 px-1.5 rounded-full text-[11px] text-muted-foreground hover:text-foreground"
-                    title="Stop speaking"
+                    title={t.chat.stop}
                   >
                     <Square className="size-2.5 fill-current" />
                   </Button>
@@ -130,7 +136,7 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
                       <span className="h-3 w-0.5 animate-pulse delay-75 bg-primary rounded-full" />
                       <span className="h-2 w-0.5 animate-pulse delay-150 bg-primary rounded-full" />
                     </span>
-                    Speaking...
+                    {t.chat.speaking}
                   </span>
                 </>
               ) : isCurrentPaused ? (
@@ -141,10 +147,10 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
                     size="sm"
                     onClick={() => ttsPlayer.resume()}
                     className="h-6 px-2 gap-1 rounded-full text-[11px] bg-amber-500/15 text-amber-700 dark:text-amber-400 hover:bg-amber-500/25 font-medium transition-colors"
-                    title="Resume voice"
+                    title={t.chat.resume}
                   >
                     <Play className="size-3 fill-current" />
-                    Resume
+                    {t.chat.resume}
                   </Button>
                   <Button
                     type="button"
@@ -152,12 +158,12 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
                     size="sm"
                     onClick={() => ttsPlayer.stop()}
                     className="h-6 px-1.5 rounded-full text-[11px] text-muted-foreground hover:text-foreground"
-                    title="Stop speaking"
+                    title={t.chat.stop}
                   >
                     <Square className="size-2.5 fill-current" />
                   </Button>
                   <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium pl-1">
-                    Paused
+                    {t.chat.paused}
                   </span>
                 </>
               ) : (
@@ -170,13 +176,14 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
                       message.id,
                       message.content,
                       message.audioBase64,
+                      language,
                     )
                   }
                   className="h-6 px-2 gap-1 rounded-full text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  title="Read aloud"
+                  title={t.chat.listen}
                 >
                   <Volume2 className="size-3" />
-                  Listen
+                  {t.chat.listen}
                 </Button>
               )}
             </div>
@@ -187,7 +194,7 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
         {message.sources && message.sources.length > 0 && (
           <div className="flex flex-col gap-1.5 w-full">
             <p className="px-1 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-              Sources
+              {t.chat.sources}
             </p>
             <div className="flex flex-col gap-1.5">
               {message.sources.map((s, i) => (
