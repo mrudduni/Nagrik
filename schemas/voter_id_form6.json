@@ -1,0 +1,176 @@
+{
+  "id": "voter_id_form6",
+  "name": "Voter Registration - Form 6 (New Elector)",
+  "description": "Election Commission of India Form 6, for first-time registration or registration after shifting to a new constituency. Field list reconstructed from the well-known ECI/NVSP form structure - verify against the live NVSP portal form before production use, since ECI periodically revises field sets.",
+  "issuing_authority": "Election Commission of India (via NVSP / Chief Electoral Officer)",
+  "category": "identity",
+  "applies_to": ["individual"],
+  "fields": [
+    {
+      "id": "constituency_state",
+      "label": "State",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "assembly_constituency",
+      "label": "Assembly constituency (name/number)",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "full_name",
+      "label": "Full name",
+      "type": "string",
+      "required": true,
+      "confidence_threshold": 0.9
+    },
+    {
+      "id": "gender",
+      "label": "Gender",
+      "type": "enum",
+      "options": ["Male", "Female", "Third Gender"],
+      "required": true
+    },
+    {
+      "id": "date_of_birth",
+      "label": "Date of birth",
+      "type": "date",
+      "format": "DD/MM/YYYY",
+      "required": true,
+      "validation": {"not_future": true, "min_age_years": 18}
+    },
+    {
+      "id": "dob_proof_document",
+      "label": "Age proof document",
+      "type": "enum",
+      "options": ["Birth Certificate", "Aadhaar", "PAN Card", "Passport", "Driving Licence", "10th Marksheet"],
+      "required": true
+    },
+    {
+      "id": "relation_type",
+      "label": "Relation type",
+      "type": "enum",
+      "options": ["Father", "Mother", "Husband", "Wife", "Other"],
+      "required": true
+    },
+    {
+      "id": "relation_name",
+      "label": "Relative's name",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "present_house_no",
+      "label": "House / Building / Door No. (present address)",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "present_street_area",
+      "label": "Street / Area / Locality (present address)",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "present_post_office",
+      "label": "Post office (present address)",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "present_town_village",
+      "label": "Town / Village (present address)",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "present_district",
+      "label": "District (present address)",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "present_pincode",
+      "label": "PIN code (present address)",
+      "type": "string",
+      "required": true,
+      "validation": {"regex": "^[1-9][0-9]{5}$"}
+    },
+    {
+      "id": "ordinarily_resident_since",
+      "label": "Ordinarily resident at present address since (month/year)",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "mobile_number",
+      "label": "Mobile number",
+      "type": "string",
+      "required": true,
+      "validation": {"regex": "^[6-9][0-9]{9}$"}
+    },
+    {
+      "id": "email",
+      "label": "Email ID",
+      "type": "string",
+      "required": false,
+      "validation": {"regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"}
+    },
+    {
+      "id": "aadhaar_number",
+      "label": "Aadhaar number",
+      "type": "string",
+      "required": false,
+      "validation": {"regex": "^[2-9][0-9]{11}$"},
+      "pii": true,
+      "note": "Voluntary to furnish, per current ECI/NVSP guidance - do not mark as blocking if the elector declines."
+    },
+    {
+      "id": "is_disabled",
+      "label": "Person with disability",
+      "type": "boolean",
+      "required": false
+    },
+    {
+      "id": "disability_type",
+      "label": "Type of disability",
+      "type": "enum",
+      "options": ["Locomotor", "Visual", "Hearing", "Intellectual", "Other"],
+      "required": false,
+      "depends_on": {"field": "is_disabled", "equals": true, "becomes": "required"}
+    },
+    {
+      "id": "previously_registered",
+      "label": "Was the applicant previously registered as an elector elsewhere?",
+      "type": "boolean",
+      "required": true
+    },
+    {
+      "id": "previous_epic_number",
+      "label": "Previous EPIC (Voter ID) number",
+      "type": "string",
+      "required": false,
+      "depends_on": {"field": "previously_registered", "equals": true, "becomes": "required"}
+    },
+    {
+      "id": "previous_constituency",
+      "label": "Previous assembly constituency / part number",
+      "type": "string",
+      "required": false,
+      "depends_on": {"field": "previously_registered", "equals": true, "becomes": "required"}
+    },
+    {
+      "id": "declaration",
+      "label": "Declaration of correctness of information",
+      "type": "boolean",
+      "required": true
+    }
+  ],
+  "dependencies": [
+    {"if": {"field": "is_disabled", "equals": true}, "then_required": ["disability_type"]},
+    {"if": {"field": "previously_registered", "equals": true}, "then_required": ["previous_epic_number", "previous_constituency"]}
+  ],
+  "confirmation_required_fields": ["date_of_birth", "present_pincode", "mobile_number", "aadhaar_number"],
+  "sensitive_fields": ["aadhaar_number"]
+}

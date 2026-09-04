@@ -1,0 +1,214 @@
+{
+  "id": "aadhaar_enrolment_form1",
+  "name": "Aadhaar Enrolment / Update Form (Form 1 - Resident Adult)",
+  "description": "UIDAI Form 1, for Resident Indians / NRIs aged 18+ with proof of address in India. Separate UIDAI forms exist for children (Form 3, 5-under-18) and foreign nationals (Form 7, 8) - model those as schema variants of this one if needed.",
+  "issuing_authority": "Unique Identification Authority of India (UIDAI)",
+  "category": "identity",
+  "applies_to": ["individual"],
+  "fields": [
+    {
+      "id": "purpose",
+      "label": "Purpose",
+      "type": "enum",
+      "options": ["Enrolment", "Update"],
+      "required": true
+    },
+    {
+      "id": "resident_status",
+      "label": "Resident status",
+      "type": "enum",
+      "options": ["Resident Indian", "Non-Resident Indian (NRI)"],
+      "required": true
+    },
+    {
+      "id": "full_name",
+      "label": "Full name (as per POI document)",
+      "type": "string",
+      "required": true,
+      "validation": {"no_titles": true, "max_length": 120},
+      "confidence_threshold": 0.9
+    },
+    {
+      "id": "date_of_birth",
+      "label": "Date of birth",
+      "type": "date",
+      "format": "DD/MM/YYYY",
+      "required": true,
+      "validation": {"not_future": true}
+    },
+    {
+      "id": "dob_type",
+      "label": "Date of birth type",
+      "type": "enum",
+      "options": ["Verified", "Declared", "Approximate"],
+      "required": true,
+      "note": "If 'Declared' or 'Approximate', only the year is printed on the Aadhaar card. A DOB proof document is mandatory only when 'Verified' is selected."
+    },
+    {
+      "id": "gender",
+      "label": "Gender",
+      "type": "enum",
+      "options": ["Male", "Female", "Transgender"],
+      "required": true
+    },
+    {
+      "id": "care_of",
+      "label": "C/o (name for address, e.g. parent/guardian/spouse)",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "house_no",
+      "label": "House No. / Building / Flat No.",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "street",
+      "label": "Street / Road / Lane",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "landmark",
+      "label": "Landmark",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "area",
+      "label": "Area / Locality / Sector",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "village_town_city",
+      "label": "Village / Town / City",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "post_office",
+      "label": "Post Office",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "district",
+      "label": "District",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "state",
+      "label": "State / Union Territory",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "pincode",
+      "label": "PIN code",
+      "type": "string",
+      "required": true,
+      "validation": {"regex": "^[1-9][0-9]{5}$"}
+    },
+    {
+      "id": "mobile_number",
+      "label": "Mobile number",
+      "type": "string",
+      "required": false,
+      "validation": {"regex": "^[6-9][0-9]{9}$"}
+    },
+    {
+      "id": "email",
+      "label": "Email ID",
+      "type": "string",
+      "required": false,
+      "validation": {"regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"}
+    },
+    {
+      "id": "verification_method",
+      "label": "Verification method",
+      "type": "enum",
+      "options": ["Document Based", "Introducer Based", "Head of Family (HoF) Based"],
+      "required": true,
+      "note": "HoF-based is not available for resident foreigners."
+    },
+    {
+      "id": "poi_document",
+      "label": "Proof of Identity document",
+      "type": "enum",
+      "options": ["Passport", "PAN Card", "Voter ID", "Driving Licence", "Ration Card with photo", "Government Photo ID"],
+      "required": false,
+      "depends_on": {"field": "verification_method", "equals": "Document Based", "becomes": "required"}
+    },
+    {
+      "id": "poa_document",
+      "label": "Proof of Address document",
+      "type": "enum",
+      "options": ["Passport", "Bank Passbook", "Utility Bill (<3 months)", "Voter ID", "Ration Card", "Rent Agreement"],
+      "required": false,
+      "depends_on": {"field": "verification_method", "equals": "Document Based", "becomes": "required"}
+    },
+    {
+      "id": "dob_document",
+      "label": "Proof of Date of Birth document",
+      "type": "enum",
+      "options": ["Birth Certificate", "Passport", "Matriculation Certificate", "PAN Card"],
+      "required": false,
+      "depends_on": {"field": "dob_type", "equals": "Verified", "becomes": "required"}
+    },
+    {
+      "id": "hof_name",
+      "label": "Head of Family / Introducer name",
+      "type": "string",
+      "required": false,
+      "depends_on": {"field": "verification_method", "equals": ["Introducer Based", "Head of Family (HoF) Based"], "becomes": "required"}
+    },
+    {
+      "id": "hof_aadhaar_or_eid",
+      "label": "Head of Family / Introducer Aadhaar or Enrolment ID (EID)",
+      "type": "string",
+      "required": false,
+      "depends_on": {"field": "verification_method", "equals": ["Introducer Based", "Head of Family (HoF) Based"], "becomes": "required"},
+      "validation": {"regex": "^([2-9][0-9]{11}|[0-9]{14}[0-9]{6})$"},
+      "pii": true
+    },
+    {
+      "id": "hof_relationship",
+      "label": "Relationship with Head of Family",
+      "type": "enum",
+      "options": ["Father", "Mother", "Spouse", "Guardian", "Son", "Daughter", "Other"],
+      "required": false,
+      "depends_on": {"field": "verification_method", "equals": "Head of Family (HoF) Based", "becomes": "required"}
+    },
+    {
+      "id": "por_document",
+      "label": "Proof of Relationship (POR) document",
+      "type": "string",
+      "required": false,
+      "depends_on": {"field": "verification_method", "equals": "Head of Family (HoF) Based", "becomes": "required"}
+    },
+    {
+      "id": "bank_account_linking",
+      "label": "Open/link Aadhaar-linked bank account",
+      "type": "boolean",
+      "required": false,
+      "note": "Optional; once set, cannot be corrected later."
+    },
+    {
+      "id": "data_sharing_consent",
+      "label": "Consent to share information with other government agencies",
+      "type": "boolean",
+      "required": true
+    }
+  ],
+  "dependencies": [
+    {"if": {"field": "verification_method", "equals": "Document Based"}, "then_required": ["poi_document", "poa_document"]},
+    {"if": {"field": "verification_method", "in": ["Introducer Based", "Head of Family (HoF) Based"]}, "then_required": ["hof_name", "hof_aadhaar_or_eid"]},
+    {"if": {"field": "verification_method", "equals": "Head of Family (HoF) Based"}, "then_required": ["hof_relationship", "por_document"]},
+    {"if": {"field": "dob_type", "equals": "Verified"}, "then_required": ["dob_document"]}
+  ],
+  "confirmation_required_fields": ["date_of_birth", "pincode", "hof_aadhaar_or_eid"],
+  "sensitive_fields": ["hof_aadhaar_or_eid"]
+}

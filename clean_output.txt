@@ -1,0 +1,24 @@
+﻿[clean] Reading C:\Users\abhin\OneDrive\Documents\hack\decode\updated_data.csv à
+[clean] Shape: (3400, 11)
+[clean] Columns: ['scheme_name', 'slug', 'details', 'benefits', 'eligibility', 'application', 'documents', 'level', 'schemeCategory', 'Unnamed: 9', 'tags']
+[clean] Rows before cleaning: 3400
+[clean] After dedup on (scheme_name, slug): 3397
+[clean] After dropping null scheme_name/eligibility: 3397
+python : Traceback (most recent call last):
+At line:1 char:1
++ python ingestion/clean.py 2>&1 | Out-File -Encoding utf8 clean_output ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\abhin\OneDrive\Documents\hack\decode\ingestion\clean.py", line 163, in <module>
+    main()
+  File "C:\Users\abhin\OneDrive\Documents\hack\decode\ingestion\clean.py", line 151, in main
+    df_clean = clean(df)
+               ^^^^^^^^^
+  File "C:\Users\abhin\OneDrive\Documents\hack\decode\ingestion\clean.py", line 141, in clean
+    print(f"[clean] \u2705 Rows surviving cleaning: {after} (dropped {before - after})")
+  File "C:\Program Files\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 8: character maps to <undefined>

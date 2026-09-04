@@ -1,0 +1,20 @@
+[
+  {
+    "schema_name": "public_grievance",
+    "data": {
+      "complainant_name": "Mriduni.",
+      "ministry_or_department": "Railway.",
+      "grievance_description": "Was discarded despite me paying for it."
+    }
+  },
+  {
+    "schema_name": "public_grievance",
+    "data": {
+      "complainant_name": "Mriduni.",
+      "aadhaar_number": "90",
+      "ministry_or_department": "Railway.",
+      "grievance_description": "Wasn't accepted even after doing the payment for it.",
+      "pincode": "123456"
+    }
+  }
+]

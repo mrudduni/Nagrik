@@ -1,0 +1,188 @@
+{
+  "id": "pan_card_49a",
+  "name": "PAN Card Application (Form 49A)",
+  "description": "Application for allotment of Permanent Account Number for Indian citizens (Form 49A). Note: from 1 Apr 2026 the Income Tax Dept began phasing in a revised PAN application form; field structure below still holds for the current data model and should be re-checked against the live NSDL/Protean form before production use.",
+  "issuing_authority": "Income Tax Department (via Protean/NSDL, UTIITSL)",
+  "category": "identity",
+  "applies_to": ["individual", "huf"],
+  "fields": [
+    {
+      "id": "applicant_status",
+      "label": "Status of applicant",
+      "type": "enum",
+      "options": ["Individual", "HUF", "Company", "Partnership Firm", "LLP", "AOP", "BOI", "AOP(Trust)", "Local Authority", "Artificial Juridical Person", "Government"],
+      "required": true,
+      "requires_confirmation": true
+    },
+    {
+      "id": "full_name",
+      "label": "Full name (Last / First / Middle)",
+      "type": "string",
+      "required": true,
+      "validation": {"no_abbreviations": true, "no_titles": ["Shri", "Smt", "Kumari", "Dr", "Major", "M/s"], "max_length": 120},
+      "confidence_threshold": 0.9
+    },
+    {
+      "id": "has_other_name",
+      "label": "Have you ever been known by any other name?",
+      "type": "boolean",
+      "required": true
+    },
+    {
+      "id": "other_name",
+      "label": "Other name (if applicable)",
+      "type": "string",
+      "required": false,
+      "depends_on": {"field": "has_other_name", "equals": true, "becomes": "required"}
+    },
+    {
+      "id": "gender",
+      "label": "Gender",
+      "type": "enum",
+      "options": ["Male", "Female", "Transgender"],
+      "required": false,
+      "depends_on": {"field": "applicant_status", "equals": "Individual", "becomes": "required"}
+    },
+    {
+      "id": "marital_status",
+      "label": "Marital status",
+      "type": "enum",
+      "options": ["Single", "Married"],
+      "required": false,
+      "depends_on": {"field": "applicant_status", "equals": "Individual", "becomes": "required"}
+    },
+    {
+      "id": "date_of_birth",
+      "label": "Date of birth / incorporation / formation",
+      "type": "date",
+      "format": "DDMMYYYY",
+      "required": true,
+      "validation": {"not_future": true},
+      "confidence_threshold": 0.85
+    },
+    {
+      "id": "fathers_name",
+      "label": "Father's name",
+      "type": "string",
+      "required": false,
+      "depends_on": {"field": "applicant_status", "equals": "Individual", "becomes": "required"},
+      "note": "Mandatory for individuals; must not contain spouse's name."
+    },
+    {
+      "id": "mothers_name",
+      "label": "Mother's name",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "name_on_card_flag",
+      "label": "Name to be printed on PAN card (father's / mother's)",
+      "type": "enum",
+      "options": ["Father", "Mother"],
+      "required": false,
+      "default": "Father"
+    },
+    {
+      "id": "address_line1",
+      "label": "Address line 1 (Flat/Room/Door/Block No.)",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "address_line2",
+      "label": "Address line 2 (Premises/Building/Village)",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": "city",
+      "label": "City / Town / District",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": "state",
+      "label": "State / Union Territory",
+      "type": "enum",
+      "options": ["Andhra Pradesh", "Assam", "Bihar", "Delhi", "Gujarat", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Punjab", "Rajasthan", "Tamil Nadu", "Telangana", "Uttar Pradesh", "West Bengal", "__other__"],
+      "required": true
+    },
+    {
+      "id": "pincode",
+      "label": "PIN code",
+      "type": "string",
+      "required": true,
+      "validation": {"regex": "^[1-9][0-9]{5}$"}
+    },
+    {
+      "id": "country",
+      "label": "Country",
+      "type": "string",
+      "required": true,
+      "default": "India"
+    },
+    {
+      "id": "mobile_number",
+      "label": "Mobile number",
+      "type": "string",
+      "required": false,
+      "validation": {"regex": "^[6-9][0-9]{9}$"}
+    },
+    {
+      "id": "email",
+      "label": "Email ID",
+      "type": "string",
+      "required": false,
+      "validation": {"regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"}
+    },
+    {
+      "id": "source_of_income",
+      "label": "Source of income",
+      "type": "enum",
+      "options": ["Salary", "Business/Profession", "Capital Gains", "House Property", "Other Sources", "No Income"],
+      "required": true
+    },
+    {
+      "id": "aadhaar_number",
+      "label": "Aadhaar number",
+      "type": "string",
+      "required": false,
+      "depends_on": {"field": "applicant_status", "equals": "Individual", "becomes": "required"},
+      "validation": {"regex": "^[2-9][0-9]{11}$"},
+      "pii": true
+    },
+    {
+      "id": "poi_document",
+      "label": "Proof of Identity document type",
+      "type": "enum",
+      "options": ["Aadhaar", "Passport", "Voter ID", "Driving Licence", "Ration Card with photo", "Arm's Licence", "Photo ID issued by govt"],
+      "required": true
+    },
+    {
+      "id": "poa_document",
+      "label": "Proof of Address document type",
+      "type": "enum",
+      "options": ["Aadhaar", "Passport", "Voter ID", "Driving Licence", "Utility Bill", "Bank Passbook", "Post Office Passbook"],
+      "required": true
+    },
+    {
+      "id": "pob_document",
+      "label": "Proof of Date of Birth document type",
+      "type": "enum",
+      "options": ["Birth Certificate", "Aadhaar", "Passport", "Matriculation Certificate", "Marriage Certificate"],
+      "required": true
+    },
+    {
+      "id": "representative_assessee_name",
+      "label": "Representative Assessee name (if minor/deceased/incapacitated)",
+      "type": "string",
+      "required": false
+    }
+  ],
+  "dependencies": [
+    {"if": {"field": "has_other_name", "equals": true}, "then_required": ["other_name"]},
+    {"if": {"field": "applicant_status", "equals": "Individual"}, "then_required": ["gender", "marital_status", "fathers_name", "aadhaar_number"]}
+  ],
+  "confirmation_required_fields": ["date_of_birth", "aadhaar_number", "pincode"],
+  "sensitive_fields": ["aadhaar_number"]
+}
