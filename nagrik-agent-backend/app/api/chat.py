@@ -381,6 +381,7 @@ async def chat_voice(payload: ChatRequest):
             text=payload.message,
             audio_base64=payload.audio_base64,
             declared_language=payload.language,
+            mime_type=payload.audio_mime_type,
         )
     except ValueError as exc:
         # STT returned empty transcript

@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./nagrik-agent-backend
+      dockerfile: Dockerfile
+    container_name: nagrik-agent-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - LLM_PROVIDER=gemini
+      - LLM_MODEL=gemini-3.5-flash-lite
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_KEYS=${GEMINI_KEYS}
+      - SARVAM_API_KEY=${SARVAM_API_KEY}
+      - ENABLE_SARVAM_FALLBACKS=true
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - CRAWLER_INTERVAL_HOURS=24
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_USER=${NEO4J_USER}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - CHECKPOINTER_BACKEND=memory
+      - USE_MOCK_BACKENDS=true
+      - CORS_ORIGINS=http://localhost:3000,http://frontend:3000
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://backend:8000
+    container_name: nagrik-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped

@@ -76,12 +76,14 @@ async def navigation_node(state: AgentState) -> dict:
         last_reply = str(last_reply)[:500]
 
         prompt_text = (
-            "Given the assistant's latest reply below, decide if a frontend navigation action would help.\n\n"
+            "Given the assistant's latest reply below, determine if a specific external link or navigation action would be useful for the user.\n"
+            "CRITICAL RULE: Default to action='none'. Only suggest an action if a specific scheme, comparison, application, or complaint was explicitly identified and discussed.\n"
+            "Never suggest navigation for general explanations, advice, or multiple scheme overviews.\n\n"
             "Valid actions: none, open_scheme_page, open_comparison, open_application_form, open_complaint_status, open_profile\n\n"
             f'Assistant reply: "{last_reply}"\n\n'
             'Respond with ONLY valid JSON like: {"action": "none", "target_id": null}\n'
-            'or if navigation is useful: {"action": "open_scheme_page", "target_id": "pm-kisan"}\n\n'
-            "Only include target_id if you are certain of the value from the conversation. Otherwise use null."
+            'or if a specific scheme is clearly identified: {"action": "open_scheme_page", "target_id": "pm-kisan"}\n\n'
+            "Only include target_id if you are certain of the exact slug/id from the conversation. Otherwise use action='none'."
         )
 
         response = await llm.ainvoke([HumanMessage(content=prompt_text)])
@@ -95,9 +97,15 @@ async def navigation_node(state: AgentState) -> dict:
         if action not in valid_actions:
             action = "none"
 
+        # If scheme page or application form is requested without a valid specific target_id, do not navigate
+        target_id = data.get("target_id")
+        if action in ("open_scheme_page", "open_application_form") and (not target_id or not str(target_id).strip() or str(target_id).lower() == "null"):
+            action = "none"
+            target_id = None
+
         nav = NavigationAction(
             action=action,
-            target_id=data.get("target_id"),
+            target_id=target_id,
         )
         return {"navigation": nav.model_dump()}
     except Exception:

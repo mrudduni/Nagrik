@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     rag_candidate_k: int = 10
     rag_similarity_distance_threshold: float = 0.90
 
+    # --- Tavily crawler ---
+    tavily_api_key: str = ""
+
 
 settings = Settings()
 

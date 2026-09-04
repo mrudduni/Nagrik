@@ -173,10 +173,64 @@ async def _translate_or_fallback(
             source_language_code=source_language_code,
             target_language_code=target_language_code,
         )
-    except SarvamUnavailableError:
-        if settings.enable_sarvam_fallbacks:
-            return text
-        raise
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("Sarvam translate failed/exhausted (%s), using raw text fallback", repr(exc))
+        return text
+
+
+async def _transcribe_with_gemini(
+    audio_base64: str,
+    mime_type: str | None = None,
+    declared_language: str | None = None,
+) -> dict:
+    """Fallback multimodal STT using Gemini when Sarvam is unavailable."""
+    import base64
+    import logging
+    from google import genai
+    from google.genai import types
+
+    logger = logging.getLogger(__name__)
+
+    if not settings.gemini_api_key:
+        raise ValueError("No speech recognition service or API key is available.")
+
+    audio_bytes = base64.b64decode(audio_base64)
+    clean_mime = (mime_type or "audio/webm").split(";")[0].strip().lower()
+    if not clean_mime.startswith("audio/"):
+        clean_mime = "audio/webm"
+
+    logger.info("🎙️ Transcribing audio via Gemini multimodal API (mime: %s, bytes: %d)", clean_mime, len(audio_bytes))
+
+    client = genai.Client(api_key=settings.gemini_api_key)
+    prompt = (
+        "You are an Indian civic governance speech recognition engine. "
+        "Listen to this audio recording of a citizen speaking. "
+        "Transcribe exactly what they say verbatim in the original spoken language "
+        "(e.g., Hindi, English, Hinglish, Bengali, Tamil, Telugu, Marathi, Kannada, etc.). "
+        "If there is speech, return ONLY the exact transcript text. "
+        "Do NOT translate, do NOT summarize, and do NOT add any quotation marks, explanations, or metadata. "
+        "If the audio has no speech (only silence or static), output: SILENCE"
+    )
+    if declared_language and declared_language not in ("auto", "unknown", "detect"):
+        prompt += f" Citizen preferred language: {declared_language}."
+
+    response = client.models.generate_content(
+        model=settings.llm_model,
+        contents=[
+            types.Part.from_bytes(data=audio_bytes, mime_type=clean_mime),
+            prompt,
+        ],
+    )
+    text = (response.text or "").strip()
+    if not text or text.upper() == "SILENCE":
+        raise ValueError("Could not detect any speech in the recording. Please try speaking again.")
+
+    detected_lang = detect_text_language(text, declared_language)
+    return {
+        "transcript": text,
+        "detected_language": detected_lang,
+    }
 
 
 async def normalize_incoming(
@@ -196,7 +250,7 @@ async def normalize_incoming(
     Handles:
     - text input
     - Indian-language text
-    - audio input
+    - audio input (Sarvam with automatic Gemini multimodal fallback)
     - automatic language detection
     """
 
@@ -204,11 +258,27 @@ async def normalize_incoming(
     # 1. Get the original text
     # ---------------------------------------------------------
     if audio_base64:
-        stt_result = await sarvam_client.speech_to_text(
-            audio_base64,
-            language_code=declared_language,
-            mime_type=mime_type,
-        )
+        stt_result = None
+        if settings.sarvam_api_key:
+            try:
+                stt_result = await sarvam_client.speech_to_text(
+                    audio_base64,
+                    language_code=declared_language,
+                    mime_type=mime_type,
+                )
+            except Exception as sarvam_err:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Sarvam STT failed (%s), falling back to Gemini multimodal audio...",
+                    repr(sarvam_err),
+                )
+
+        if not stt_result or not stt_result.get("transcript"):
+            stt_result = await _transcribe_with_gemini(
+                audio_base64=audio_base64,
+                mime_type=mime_type,
+                declared_language=declared_language,
+            )
 
         transcript = (stt_result.get("transcript") or "").strip()
 
@@ -297,8 +367,9 @@ async def prepare_outgoing(
             audio_base64 = await sarvam_client.text_to_speech(
                 localized_text, language_code=target_language or PIVOT_LANGUAGE
             )
-        except SarvamUnavailableError:
-            if not settings.enable_sarvam_fallbacks:
-                raise
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("Sarvam TTS failed or exhausted (%s), falling back to browser speech synthesis", repr(exc))
+            audio_base64 = None
 
     return {"text": localized_text, "audio_base64": audio_base64}

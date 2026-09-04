@@ -196,6 +196,7 @@ export async function sendVoiceMessage(
   sessionId: string,
   citizenId: string = "frontend-citizen",
   language: string | null = null,
+  audioMimeType: string = "audio/webm",
 ): Promise<{
   userMessage?: ChatMessage
   assistantMessage: ChatMessage
@@ -206,13 +207,17 @@ export async function sendVoiceMessage(
     session_id: sessionId,
     citizen_id: citizenId,
     audio_base64: audioBase64,
+    audio_mime_type: audioMimeType,
     language,
   })
 
-  const content = getResponseContent(response)
-
-  if (response.reply_audio_base64) {
-    playBase64Audio(response.reply_audio_base64, "audio/wav")
+  const assistantMessage: ChatMessage = {
+    id: `voice-assistant-${Date.now()}`,
+    role: "assistant",
+    content: response.reply_text || "",
+    timestamp: new Date().toISOString(),
+    sources: mapSources(response.sources),
+    audioBase64: response.reply_audio_base64 || undefined,
   }
 
   return {
@@ -225,13 +230,7 @@ export async function sendVoiceMessage(
           isVoice: true,
         }
       : undefined,
-    assistantMessage: {
-      id: `voice-assistant-${Date.now()}`,
-      role: "assistant",
-      content,
-      timestamp: new Date().toISOString(),
-      sources: mapSources(response.sources),
-    },
+    assistantMessage,
     navigation: response.navigation ?? undefined,
     intent: response.intent ?? undefined,
   }
@@ -245,5 +244,29 @@ function playBase64Audio(base64: string, mimeType: string) {
     })
   } catch (error) {
     console.error("Could not create TTS audio:", error)
+  }
+}
+
+function speakBrowserText(text: string, lang?: string | null) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return
+  try {
+    window.speechSynthesis.cancel()
+    const cleanText = text
+      .replace(/[*_#`~\[\]()]/g, " ")
+      .replace(/https?:\/\/\S+/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+    if (!cleanText) return
+
+    const utterance = new SpeechSynthesisUtterance(cleanText.slice(0, 500))
+    if (lang && lang.includes("hi")) {
+      utterance.lang = "hi-IN"
+    } else {
+      utterance.lang = "en-IN"
+    }
+    utterance.rate = 1.05
+    window.speechSynthesis.speak(utterance)
+  } catch (err) {
+    console.warn("Browser speech synthesis error:", err)
   }
 }

@@ -32,6 +32,10 @@ class ChatRequest(BaseModel):
             default=None,   
             description="Base64 encoded audio for voice chat."
         )
+    audio_mime_type: Optional[str] = Field(
+            default="audio/webm",
+            description="MIME type of the audio payload (e.g. audio/webm, audio/wav, audio/mp4)"
+        )
         
     attachments: list[Attachment] = Field(default_factory=list)
 

@@ -333,6 +333,7 @@ export interface ChatMessage {
   sources?: ChatSource[]
   suggestedActions?: { label: string; href: string }[]
   isVoice?: boolean
+  audioBase64?: string
 }
 
 // --- Government Dashboard / Analytics ------------------------------------------

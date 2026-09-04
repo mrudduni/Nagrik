@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
 import { LandmarkIcon } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { sendMessage, sendVoiceMessage, type BackendNavigationAction } from "@/services/chat-service"
@@ -9,6 +8,7 @@ import type { ChatMessage } from "@/types"
 import { ChatMessageBubble } from "./chat-message-bubble"
 import { ChatComposer, type PendingAttachment } from "./chat-composer"
 import { useApp } from "@/context/app-provider"
+import { ttsPlayer } from "@/lib/tts-player"
 
 // ─── Stable session helpers ───────────────────────────────────────────────────
 
@@ -23,44 +23,49 @@ function getOrCreateSessionId(): string {
   return id
 }
 
-// ─── Navigation handler ───────────────────────────────────────────────────────
+// ─── Suggested action helper ──────────────────────────────────────────────────
+// Instead of automatically hijacking the screen with router.push, we present
+// any navigation suggestions as clickable action chips under the assistant message.
 
-function useNavigationAction() {
-  const router = useRouter()
-
-  return React.useCallback(
-    (nav: BackendNavigationAction | undefined) => {
-      if (!nav || nav.action === "none") return
-      switch (nav.action) {
-        case "open_scheme_page":
-          if (nav.target_id) {
-            router.push(`/services/${nav.target_id}`)
-          } else {
-            router.push("/services")
-          }
-          break
-        case "open_comparison":
-          router.push("/services/compare")
-          break
-        case "open_application_form":
-          if (nav.target_id) {
-            router.push(`/apply/${nav.target_id}`)
-          } else {
-            router.push("/services")
-          }
-          break
-        case "open_complaint_status":
-          router.push("/issues")
-          break
-        case "open_profile":
-          router.push("/profile")
-          break
-        default:
-          break
+function getSuggestedActionFromNavigation(
+  nav: BackendNavigationAction | undefined,
+): { label: string; href: string } | null {
+  if (!nav || !nav.action || nav.action === "none") return null
+  switch (nav.action) {
+    case "open_scheme_page":
+      if (nav.target_id) {
+        return {
+          label: "View Scheme Details",
+          href: `/services/${nav.target_id}`,
+        }
       }
-    },
-    [router],
-  )
+      return null
+    case "open_comparison":
+      return {
+        label: "Compare Schemes",
+        href: "/services/compare",
+      }
+    case "open_application_form":
+      if (nav.target_id) {
+        return {
+          label: "Apply for Scheme",
+          href: `/apply/${nav.target_id}`,
+        }
+      }
+      return null
+    case "open_complaint_status":
+      return {
+        label: "View Grievance Status",
+        href: "/issues",
+      }
+    case "open_profile":
+      return {
+        label: "View Profile",
+        href: "/profile",
+      }
+    default:
+      return null
+  }
 }
 
 // ─── Welcome message ──────────────────────────────────────────────────────────
@@ -102,7 +107,6 @@ function makeErrorMessage(error: unknown): string {
 
 export function ChatPanel() {
   const { session } = useApp()
-  const handleNavigation = useNavigationAction()
 
   const [messages, setMessages] = React.useState<ChatMessage[]>([WELCOME_MESSAGE])
   const [isTyping, setIsTyping] = React.useState(false)
@@ -146,9 +150,15 @@ export function ChatPanel() {
         null,
         attachment,
       )
-      setMessages((prev) => [...prev, result.message])
-      // Handle navigation action from backend
-      handleNavigation(result.navigation)
+      const suggestedAction = getSuggestedActionFromNavigation(result.navigation)
+      const assistantMsg: ChatMessage = {
+        ...result.message,
+        suggestedActions: [
+          ...(result.message.suggestedActions || []),
+          ...(suggestedAction ? [suggestedAction] : []),
+        ],
+      }
+      setMessages((prev) => [...prev, assistantMsg])
     } catch (error) {
       console.error("Message failed:", error)
       setMessages((prev) => [
@@ -167,6 +177,7 @@ export function ChatPanel() {
 
   async function handleVoiceSend({
     audioBase64,
+    mimeType,
   }: {
     audioBase64: string
     mimeType: string
@@ -179,13 +190,28 @@ export function ChatPanel() {
         audioBase64,
         sessionIdRef.current,
         citizenId,
+        null,
+        mimeType,
       )
+      const suggestedAction = getSuggestedActionFromNavigation(result.navigation)
+      const assistantMsg: ChatMessage = {
+        ...result.assistantMessage,
+        suggestedActions: [
+          ...(result.assistantMessage.suggestedActions || []),
+          ...(suggestedAction ? [suggestedAction] : []),
+        ],
+      }
       setMessages((prev) => [
         ...prev,
         ...(result.userMessage ? [result.userMessage] : []),
-        result.assistantMessage,
+        assistantMsg,
       ])
-      handleNavigation(result.navigation)
+      // Play TTS with start/pause/resume capabilities
+      ttsPlayer.start(
+        assistantMsg.id,
+        assistantMsg.content,
+        assistantMsg.audioBase64,
+      )
     } catch (error) {
       console.error("Voice message failed:", error)
       setMessages((prev) => [

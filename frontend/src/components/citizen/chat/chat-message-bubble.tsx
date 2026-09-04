@@ -1,3 +1,6 @@
+"use client"
+
+import * as React from "react"
 import Link from "next/link"
 import {
   LandmarkIcon,
@@ -7,6 +10,10 @@ import {
   ExternalLink,
   ArrowRight,
   BookOpen,
+  Play,
+  Pause,
+  Square,
+  Volume2,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -15,6 +22,7 @@ import { formatDateTime } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { useApp } from "@/context/app-provider"
 import { initials } from "@/lib/format"
+import { ttsPlayer } from "@/lib/tts-player"
 
 import { FormattedMessage } from "./formatted-message"
 
@@ -29,6 +37,22 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
   const { session } = useApp()
   const AttachmentIcon =
     message.attachment ? ATTACHMENT_ICON[message.attachment.type] : null
+
+  const [activeId, setActiveId] = React.useState<string | null>(ttsPlayer.activeId)
+  const [isPlaying, setIsPlaying] = React.useState<boolean>(ttsPlayer.isPlaying)
+  const [isPaused, setIsPaused] = React.useState<boolean>(ttsPlayer.isPaused)
+
+  React.useEffect(() => {
+    return ttsPlayer.subscribe(() => {
+      setActiveId(ttsPlayer.activeId)
+      setIsPlaying(ttsPlayer.isPlaying)
+      setIsPaused(ttsPlayer.isPaused)
+    })
+  }, [])
+
+  const isCurrentPlaying = activeId === message.id && isPlaying
+  const isCurrentPaused = activeId === message.id && isPaused
+  const isCurrentActive = activeId === message.id && (isPlaying || isPaused)
 
   return (
     <div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
@@ -73,6 +97,90 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
             </div>
           )}
           <FormattedMessage content={message.content} isUser={isUser} />
+
+          {/* TTS Player Controls (Start, Pause in between, Resume, Stop) */}
+          {!isUser && (
+            <div className="mt-2.5 flex items-center gap-1.5 border-t border-border/40 pt-2">
+              {isCurrentPlaying ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => ttsPlayer.pause()}
+                    className="h-6 px-2 gap-1 rounded-full text-[11px] bg-primary/15 text-primary hover:bg-primary/25 font-medium transition-colors"
+                    title="Pause voice"
+                  >
+                    <Pause className="size-3 fill-current" />
+                    Pause
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => ttsPlayer.stop()}
+                    className="h-6 px-1.5 rounded-full text-[11px] text-muted-foreground hover:text-foreground"
+                    title="Stop speaking"
+                  >
+                    <Square className="size-2.5 fill-current" />
+                  </Button>
+                  <span className="flex items-center gap-1 text-[11px] text-primary font-medium pl-1">
+                    <span className="flex gap-0.5 items-center">
+                      <span className="h-2 w-0.5 animate-pulse bg-primary rounded-full" />
+                      <span className="h-3 w-0.5 animate-pulse delay-75 bg-primary rounded-full" />
+                      <span className="h-2 w-0.5 animate-pulse delay-150 bg-primary rounded-full" />
+                    </span>
+                    Speaking...
+                  </span>
+                </>
+              ) : isCurrentPaused ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => ttsPlayer.resume()}
+                    className="h-6 px-2 gap-1 rounded-full text-[11px] bg-amber-500/15 text-amber-700 dark:text-amber-400 hover:bg-amber-500/25 font-medium transition-colors"
+                    title="Resume voice"
+                  >
+                    <Play className="size-3 fill-current" />
+                    Resume
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => ttsPlayer.stop()}
+                    className="h-6 px-1.5 rounded-full text-[11px] text-muted-foreground hover:text-foreground"
+                    title="Stop speaking"
+                  >
+                    <Square className="size-2.5 fill-current" />
+                  </Button>
+                  <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium pl-1">
+                    Paused
+                  </span>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    ttsPlayer.start(
+                      message.id,
+                      message.content,
+                      message.audioBase64,
+                    )
+                  }
+                  className="h-6 px-2 gap-1 rounded-full text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  title="Read aloud"
+                >
+                  <Volume2 className="size-3" />
+                  Listen
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Rich source cards */}
