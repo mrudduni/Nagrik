@@ -21,8 +21,13 @@ function LoginPageInner() {
   const [loading, setLoading] = React.useState<"form" | "demo" | null>(null)
 
   React.useEffect(() => {
-    if (session) router.replace(session.role === "officer" ? "/gov" : "/")
-  }, [session, router])
+    if (session) {
+      const requestedPortal = params.get("portal")
+      if (requestedPortal === "gov" && session.role !== "officer") return
+      if (requestedPortal === "citizen" && session.role !== "citizen") return
+      router.replace(session.role === "officer" ? "/gov" : "/")
+    }
+  }, [session, router, params])
 
   async function handleLogin(e?: React.FormEvent) {
     e?.preventDefault()

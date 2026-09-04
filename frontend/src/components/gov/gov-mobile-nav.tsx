@@ -3,11 +3,13 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LandmarkIcon, Menu } from "lucide-react"
+import { LandmarkIcon, Menu, UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { GOV_NAV } from "@/lib/nav-config"
 import { cn } from "@/lib/utils"
+import { useApp } from "@/context/app-provider"
+import { useRouter } from "next/navigation"
 
 /**
  * Navigation drawer for the officer portal below the `lg` breakpoint, where
@@ -16,7 +18,15 @@ import { cn } from "@/lib/utils"
  */
 export function GovMobileNav() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { login } = useApp()
   const [open, setOpen] = React.useState(false)
+
+  const handleSwitchToCitizen = async () => {
+    setOpen(false)
+    await login("citizen")
+    router.push("/")
+  }
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -62,13 +72,14 @@ export function GovMobileNav() {
         </nav>
 
         <div className="mt-auto border-t border-sidebar-border p-3">
-          <Link
-            href="/"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2 rounded-lg border border-dashed border-sidebar-border px-3 py-2.5 text-xs text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent"
+          <button
+            type="button"
+            onClick={handleSwitchToCitizen}
+            className="flex w-full items-center gap-2 rounded-lg border border-dashed border-sidebar-border px-3 py-2.5 text-xs text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent cursor-pointer"
           >
-            Switch to Citizen App
-          </Link>
+            <UserRound className="size-3.5 text-sidebar-primary" />
+            <span>Switch to Citizen App</span>
+          </button>
         </div>
       </SheetContent>
     </Sheet>

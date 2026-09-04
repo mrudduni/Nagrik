@@ -156,8 +156,26 @@ export async function listIssues(filters: IssueFilters = {}): Promise<CivicIssue
   })
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_COMPLAINT_API_URL || "http://localhost:8002/api/v1"
+
+const BACKEND_TO_UI_CAT: Record<string, IssueCategory> = {
+  POTHOLE: "Roads & Potholes",
+  WATER_SUPPLY: "Water Supply",
+  DRAINAGE: "Drainage",
+  GARBAGE: "Sanitation & Garbage",
+  STREETLIGHT: "Street Lighting",
+  POLLUTION: "Parks & Environment",
+  NOISE: "Noise Pollution",
+  ENCROACHMENT: "Encroachment",
+  TRAFFIC: "Public Safety",
+  ELECTRICITY: "Electricity",
+  PUBLIC_TRANSPORT: "Public Safety",
+  SANITATION: "Sanitation & Garbage",
+  OTHER: "Public Safety",
+}
+
 export async function getIssue(id: string): Promise<CivicIssue | undefined> {
-  // Try backend first for NGR-prefixed IDs (primary backend on :8000)
+  // Try backend first for NGR-prefixed IDs (Agent backend)
   if (id.toUpperCase().startsWith("NGR-")) {
     try {
       const record = await apiGet<BackendComplaintStatusRecord>(
@@ -165,9 +183,95 @@ export async function getIssue(id: string): Promise<CivicIssue | undefined> {
       )
       return _backendRecordToIssue(record, "")
     } catch {
-      // Not found on backend — fall through to mock store
+      // Not found on agent backend — fall through
     }
   }
+
+  // Try Person 3 Complaint Service
+  try {
+    const res = await fetch(`${API_BASE}/complaints/${id}`, { cache: "no-store", signal: AbortSignal.timeout(2000) })
+    if (res.ok) {
+      const c = await res.json()
+      let timeline: any[] = []
+      try {
+        const tlRes = await fetch(`${API_BASE}/complaints/${id}/timeline`, { cache: "no-store", signal: AbortSignal.timeout(1500) })
+        if (tlRes.ok) {
+          const events = await tlRes.json()
+          timeline = events.map((e: any) => ({
+            id: e.id,
+            label: e.event_type.replace(/_/g, " "),
+            description: e.details || "",
+            timestamp: e.created_at,
+            actor: e.actor.toLowerCase(),
+            status: "completed",
+          }))
+        }
+      } catch {
+        // Timeline fallback
+      }
+
+      if (timeline.length === 0) {
+        timeline = [
+          {
+            id: "ev_1",
+            label: "Reported",
+            description: "Complaint registered via Nagrik digital citizen assistant",
+            timestamp: c.created_at,
+            actor: "citizen",
+            status: "completed",
+          },
+        ]
+      }
+
+      const category = BACKEND_TO_UI_CAT[c.category] || "Roads & Potholes"
+      const statusMap: Record<string, IssueStatus> = {
+        SUBMITTED: "submitted",
+        ACKNOWLEDGED: "acknowledged",
+        ASSIGNED: "assigned",
+        IN_PROGRESS: "in-progress",
+        RESOLUTION_CLAIMED: "resolved",
+        CITIZEN_VERIFIED: "closed",
+        CLOSED: "closed",
+        REOPENED: "reopened",
+      }
+
+      return {
+        id: c.id,
+        referenceNumber: `NAG/${new Date(c.created_at || Date.now()).getFullYear()}/${c.id.slice(0, 8).toUpperCase()}`,
+        title: c.title,
+        description: c.description,
+        category,
+        aiSuggestedCategory: category,
+        aiConfidence: 0.94,
+        severity: c.severity >= 5 ? "critical" : c.severity >= 4 ? "high" : c.severity >= 3 ? "medium" : "low",
+        status: statusMap[c.status] || "submitted",
+        department: c.department_code || "Municipal Works",
+        ward: c.ward || "Central Ward",
+        district: c.district || "Bengaluru Urban",
+        location: {
+          lat: c.latitude || 12.9345,
+          lng: c.longitude || 77.6265,
+          address: `${c.ward || "Ward"}, ${c.district || "Bengaluru"}`,
+        },
+        reportedBy: c.citizen_id,
+        reportedOn: c.created_at,
+        lastUpdated: c.updated_at || c.created_at,
+        imageUrls: c.evidence_urls || [],
+        upvotes: 0,
+        duplicateCount: c.cluster_id ? 4 : 0,
+        timeline,
+        slaHours: c.severity >= 4 ? 48 : 120,
+        hoursElapsed: Math.min(
+          120,
+          Math.max(1, Math.round((Date.now() - new Date(c.created_at).getTime()) / (1000 * 60 * 60)))
+        ),
+        assignedOfficer: c.assigned_officer || "Unassigned",
+      }
+    }
+  } catch (err) {
+    // Fallback to local mock store
+  }
+
   return request(() => store.find((i) => i.id === id))
 }
 

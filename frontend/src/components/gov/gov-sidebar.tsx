@@ -1,13 +1,28 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { LandmarkIcon } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { LandmarkIcon, Loader2, UserRound } from "lucide-react"
 import { GOV_NAV } from "@/lib/nav-config"
 import { cn } from "@/lib/utils"
+import { useApp } from "@/context/app-provider"
 
 export function GovSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { login } = useApp()
+  const [switching, setSwitching] = React.useState(false)
+
+  const handleSwitchToCitizen = async () => {
+    setSwitching(true)
+    try {
+      await login("citizen")
+      router.push("/")
+    } catch {
+      setSwitching(false)
+    }
+  }
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground lg:flex">
@@ -42,12 +57,19 @@ export function GovSidebar() {
         })}
       </nav>
       <div className="border-t border-sidebar-border p-3">
-        <Link
-          href="/"
-          className="flex items-center gap-2 rounded-lg border border-dashed border-sidebar-border px-3 py-2.5 text-xs text-sidebar-foreground/60 hover:bg-sidebar-accent transition-colors"
+        <button
+          type="button"
+          onClick={handleSwitchToCitizen}
+          disabled={switching}
+          className="flex w-full items-center gap-2 rounded-lg border border-dashed border-sidebar-border px-3 py-2.5 text-xs text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors cursor-pointer"
         >
-          Switch to Citizen App
-        </Link>
+          {switching ? (
+            <Loader2 className="size-3.5 animate-spin text-sidebar-primary" />
+          ) : (
+            <UserRound className="size-3.5 text-sidebar-primary" />
+          )}
+          <span>{switching ? "Switching to Citizen..." : "Switch to Citizen App"}</span>
+        </button>
       </div>
     </aside>
   )
