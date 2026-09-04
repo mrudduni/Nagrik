@@ -17,23 +17,28 @@ Nagrik lets citizens discover government schemes, file civic complaints, and get
 
 Or double-click **`start.bat`**.
 
-This opens two terminal windows:
+This opens separate terminal windows for the complete platform:
 
-| Service | URL |
-|---------|-----|
-| FastAPI AI backend | http://127.0.0.1:8000 |
-| Next.js frontend | http://localhost:3000 |
+| Service | Port | Description |
+|---------|------|-------------|
+| Next.js Frontend | http://localhost:3000 | Citizen App + Government Analytics Dashboard |
+| FastAPI AI Backend | http://127.0.0.1:8000 | Voice & Chatbot Agent, Sarvam STT/TTS |
+| Complaint Microservice | http://localhost:8002 | Person 3 Civic Grievance & SLA Engine |
 
-Open http://localhost:3000 in your browser once both are running.
+Open http://localhost:3000 in your browser once services are running.
 
 > **First time only** — install dependencies before running:
 > ```powershell
-> # Backend
+> # 1. AI Agent Backend
 > cd nagrik-agent-backend
 > pip install -r requirements.txt
 >
-> # Frontend
-> cd frontend
+> # 2. Complaint Backend (Person 3)
+> cd ../backend/complaint_service
+> pip install -r requirements.txt
+>
+> # 3. Frontend
+> cd ../../frontend
 > npm install
 > ```
 

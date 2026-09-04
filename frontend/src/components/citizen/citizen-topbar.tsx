@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { LogOut, Phone, Settings, UserRound } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Building2, LogOut, Phone, Settings, UserRound } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,7 +21,8 @@ import { initials } from "@/lib/format"
 import { CallNagrikDialog } from "./call-nagrik-dialog"
 
 export function CitizenTopbar() {
-  const { session, logout } = useApp()
+  const { session, logout, login } = useApp()
+  const router = useRouter()
   const citizen = session?.citizen
 
   return (
@@ -61,6 +63,9 @@ export function CitizenTopbar() {
               <Link href="/profile?tab=preferences">
                 <Settings /> Preferences
               </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={async () => { await login("officer"); router.push("/gov") }}>
+              <Building2 /> Switch to Government Portal
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={logout}>

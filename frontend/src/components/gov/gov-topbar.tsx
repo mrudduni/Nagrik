@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { LogOut, Settings, UserRound } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -19,7 +20,8 @@ import { initials } from "@/lib/format"
 import { GovMobileNav } from "./gov-mobile-nav"
 
 export function GovTopbar() {
-  const { session, logout } = useApp()
+  const { session, logout, login } = useApp()
+  const router = useRouter()
   const officer = session?.officer
 
   return (
@@ -56,6 +58,9 @@ export function GovTopbar() {
             </DropdownMenuItem>
             <DropdownMenuItem>
               <Settings /> Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={async () => { await login("citizen"); router.push("/") }}>
+              <UserRound /> Switch to Citizen App
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={logout}>
