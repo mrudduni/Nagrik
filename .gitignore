@@ -69,3 +69,9 @@ venv/
 
 # Vercel
 .vercel
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+*.log
