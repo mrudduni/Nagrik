@@ -15,11 +15,13 @@ torch>=2.0.0
 # ── FastAPI web framework ─────────────────────────────────────────────────────
 fastapi>=0.111.0
 uvicorn[standard]>=0.29.0
+sqlalchemy>=2.0.0
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 python-dotenv>=1.0.0
 requests>=2.31.0
 pydantic>=2.6.0
+sarvamai>=0.1.0
 
 # ── Supabase Auth & DB ────────────────────────────────────────────────────────
 supabase>=2.4.0

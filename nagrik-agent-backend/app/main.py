@@ -7,18 +7,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Nagrik - AI Agent & Voice/Application Backend")
 
-app.include_router(health.router, tags=["health"])
-app.include_router(chat.router, tags=["chat"])
-app.include_router(applications.router, tags=["applications"])
-app.include_router(complaints.router, tags=["complaints"])
+# Support all common URL prefixes (/chat, /api/chat, /api/v1/chat)
+for prefix in ("", "/api", "/api/v1"):
+    app.include_router(health.router, prefix=prefix, tags=["health"])
+    app.include_router(chat.router, prefix=prefix, tags=["chat"])
+    app.include_router(applications.router, prefix=prefix, tags=["applications"])
+    app.include_router(complaints.router, prefix=prefix, tags=["complaints"])
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)
+)

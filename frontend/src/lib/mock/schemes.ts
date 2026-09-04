@@ -437,5 +437,35 @@ export const MOCK_SCHEMES: Scheme[] = [
 ]
 
 export function findSchemeById(id: string): Scheme | undefined {
-  return MOCK_SCHEMES.find((s) => s.id === id)
+  if (!id) return undefined
+  const cleanId = id.toLowerCase().trim()
+
+  // 1. Direct exact match
+  let found = MOCK_SCHEMES.find((s) => s.id.toLowerCase() === cleanId)
+  if (found) return found
+
+  // 2. Exact match with/without 'sch-' prefix
+  const withPrefix = cleanId.startsWith("sch-") ? cleanId : `sch-${cleanId}`
+  found = MOCK_SCHEMES.find((s) => s.id.toLowerCase() === withPrefix)
+  if (found) return found
+
+  const stripped = cleanId.replace(/^sch-/, "")
+  found = MOCK_SCHEMES.find(
+    (s) => s.id.toLowerCase().replace(/^sch-/, "") === stripped
+  )
+  if (found) return found
+
+  // 3. Substring/slug match across ID, title, and tags
+  found = MOCK_SCHEMES.find((s) => {
+    const sId = s.id.toLowerCase().replace(/^sch-/, "")
+    const sTitle = s.title.toLowerCase()
+    return (
+      sId.includes(stripped) ||
+      stripped.includes(sId) ||
+      sTitle.includes(stripped) ||
+      s.tags.some((t) => t.toLowerCase().includes(stripped))
+    )
+  })
+
+  return found
 }

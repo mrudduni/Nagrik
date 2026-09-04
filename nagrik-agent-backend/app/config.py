@@ -10,10 +10,12 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # --- LLM abstraction ---
-    llm_provider: str = "openrouter"       # "openrouter" | "gemini"
-    llm_model: str = "openai/gpt-4o-mini"
-    openrouter_api_key: str = ""
+    llm_provider: str = "openai"       # "openai" | "gemini" | "openrouter"
+    llm_model: str = "gpt-4o-mini"
+    openai_api_key: str = ""
     gemini_api_key: str = ""
+    openrouter_api_key: str = ""
+
 
     # --- Sarvam ---
     sarvam_api_key: str = ""

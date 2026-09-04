@@ -33,6 +33,11 @@ class ChatRequest(BaseModel):
             description="Base64 encoded audio for voice chat."
         )
         
+    mime_type: Optional[str] = Field(
+            default=None,
+            description="MIME type of the audio recording (e.g. audio/webm, audio/wav, audio/mp4)."
+        )
+
     attachments: list[Attachment] = Field(default_factory=list)
 
 class NavigationAction(BaseModel):

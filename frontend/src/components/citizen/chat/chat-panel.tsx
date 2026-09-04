@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { LandmarkIcon } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { SUGGESTED_QUERIES } from "@/lib/mock/chat"
+import { findSchemeById } from "@/lib/mock/schemes"
 import { sendMessage, sendVoiceMessage, type BackendNavigationAction } from "@/services/chat-service"
 import type { ChatMessage } from "@/types"
 import { ChatMessageBubble } from "./chat-message-bubble"
@@ -33,23 +34,35 @@ function useNavigationAction() {
     (nav: BackendNavigationAction | undefined) => {
       if (!nav || nav.action === "none") return
       switch (nav.action) {
-        case "open_scheme_page":
+        case "open_scheme_page": {
           if (nav.target_id) {
-            router.push(`/services/${nav.target_id}`)
+            const found = findSchemeById(nav.target_id)
+            if (found) {
+              router.push(`/services/${found.id}`)
+            } else {
+              router.push("/services")
+            }
           } else {
             router.push("/services")
           }
           break
+        }
         case "open_comparison":
           router.push("/services/compare")
           break
-        case "open_application_form":
+        case "open_application_form": {
           if (nav.target_id) {
-            router.push(`/apply/${nav.target_id}`)
+            const found = findSchemeById(nav.target_id)
+            if (found) {
+              router.push(`/apply/${found.id}`)
+            } else {
+              router.push("/services")
+            }
           } else {
             router.push("/services")
           }
           break
+        }
         case "open_complaint_status":
           router.push("/issues")
           break
@@ -89,11 +102,8 @@ function makeErrorMessage(error: unknown): string {
     ) {
       return "Could not reach the NAGRIK backend. Please make sure the server is running and try again."
     }
-    if (msg.includes("500") || msg.includes("internal server")) {
-      return "The server encountered an error. Please try a different question or try again shortly."
-    }
-    if (msg.includes("400") || msg.includes("bad request")) {
-      return "Your message could not be processed. Please check your input and try again."
+    if (error.message && error.message.length > 5) {
+      return error.message
     }
   }
   return "Sorry, something went wrong. Please try again."
@@ -151,7 +161,7 @@ export function ChatPanel() {
       // Handle navigation action from backend
       handleNavigation(result.navigation)
     } catch (error) {
-      console.error("Message failed:", error)
+      console.warn("Message failed:", error)
       setMessages((prev) => [
         ...prev,
         {
@@ -168,6 +178,7 @@ export function ChatPanel() {
 
   async function handleVoiceSend({
     audioBase64,
+    mimeType,
   }: {
     audioBase64: string
     mimeType: string
@@ -180,6 +191,8 @@ export function ChatPanel() {
         audioBase64,
         sessionIdRef.current,
         citizenId,
+        null,
+        mimeType,
       )
       setMessages((prev) => [
         ...prev,
@@ -188,7 +201,7 @@ export function ChatPanel() {
       ])
       handleNavigation(result.navigation)
     } catch (error) {
-      console.error("Voice message failed:", error)
+      console.warn("Voice message failed:", error)
       setMessages((prev) => [
         ...prev,
         {

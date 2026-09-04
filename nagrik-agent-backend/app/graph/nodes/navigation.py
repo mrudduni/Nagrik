@@ -11,11 +11,10 @@ from app.schemas.agent_state import AgentState
 from app.schemas.chat import NavigationAction
 
 NAV_SYSTEM_PROMPT = """Given the conversation so far and the assistant's \
-latest reply, decide if a frontend navigation action would help the \
-citizen. Only propose one if clearly useful (e.g. comparing schemes should \
-open a comparison view; starting an application should open a form). \
-Otherwise return action="none". Do not invent target_id values you don't \
-have evidence for in the conversation — leave target_id null if unsure.
+latest reply, decide if a frontend navigation action should accompany the reply. \
+Navigation should ONLY be proposed if the citizen explicitly requests to navigate, open a form, view details, compare, or track (e.g. "Take me to the application form", "Open comparison"). \
+For general informational questions, document queries, or eligibility discussions, return action="none". \
+If proposed, target_id must be a simple slug (e.g. "sch-ayushman", "sch-pmkisan", "sch-pmay-u"). Do not invent non-existent IDs. Return action="none" if unsure.
 """
 
 

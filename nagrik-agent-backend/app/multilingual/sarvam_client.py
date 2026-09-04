@@ -1,46 +1,31 @@
 """
 Thin wrapper around Sarvam AI's API for Indian-language STT, TTS, and
-translation. Kept as a plain client (not a LangChain tool) because it's
-used at the graph's I/O edge, not called by the LLM as a reasoning tool.
-
-speech_to_text() now uses the official `sarvamai` SDK internally (already
-a pinned dependency, verified by inspecting the installed package
-directly rather than guessing) instead of a hand-rolled httpx JSON-body
-POST. The previous implementation sent {"audio": <base64>} as a JSON
-body, but Sarvam's real STT endpoint expects a multipart/form-data file
-upload — that mismatch was the source of the 400 Bad Request. translate()
-and text_to_speech() are untouched: they weren't reported as broken and
-aren't part of this fix.
+translation, with multi-tier fallback to OpenAI Whisper and Gemini Multimodal STT
+when Sarvam is unavailable or unconfigured.
 """
 import base64
-from unittest import result
 import httpx
 from app.config import settings
 
-from sarvamai import SarvamAI
-from sarvamai.core.api_error import ApiError
+try:
+    from sarvamai import SarvamAI
+    from sarvamai.core.api_error import ApiError
+except ImportError:
+    SarvamAI = None
+    class ApiError(Exception):
+        pass
 
 
 class SarvamUnavailableError(RuntimeError):
     """Raised when Sarvam cannot be used and caller should apply fallback behavior."""
 
 
-# Sarvam's input_audio_codec accepts a fixed set of literal values (verified
-# against the installed sarvamai SDK's transcribe() type signature). This
-# maps common audio container magic-byte signatures to those literals, so
-# the correct codec can be sent to give the API the ability to decode
-# formats that aren't self-evident from just the raw bytes (M4A/MP4 in
-# particular, which is what triggered the original bug report).
 def _detect_audio_codec(audio_bytes: bytes) -> str | None:
     if len(audio_bytes) < 12:
         return None
     if audio_bytes[0:4] == b"RIFF" and audio_bytes[8:12] == b"WAVE":
         return "wav"
     if audio_bytes[4:8] == b"ftyp":
-        # M4A/MP4 container (ISO base media file format) — this is
-        # exactly the case reported: an M4A file with mime_type
-        # "audio/mp4" was being sent as a raw JSON base64 string with no
-        # codec hint at all.
         return "mp4"
     if audio_bytes[0:3] == b"ID3" or audio_bytes[0:2] in (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"):
         return "mp3"
@@ -52,7 +37,81 @@ def _detect_audio_codec(audio_bytes: bytes) -> str | None:
         return "webm"
     if audio_bytes[0:4] == b"FORM" and audio_bytes[8:12] == b"AIFF":
         return "aiff"
-    return None  # Unrecognized: let Sarvam attempt auto-detection rather than guessing wrong.
+    return None
+
+
+async def _whisper_speech_to_text(audio_bytes: bytes, mime_type: str | None, language_code: str | None) -> dict:
+    key = settings.openai_api_key
+    if not key or "placeholder" in key.lower() or key.startswith("your_"):
+        raise SarvamUnavailableError("OpenAI API key unavailable for Whisper STT.")
+    
+    import io
+    from openai import AsyncOpenAI
+    
+    client = AsyncOpenAI(api_key=key)
+    
+    ext = "webm"
+    if mime_type:
+        mime = mime_type.lower()
+        if "wav" in mime:
+            ext = "wav"
+        elif "mp4" in mime or "m4a" in mime:
+            ext = "m4a"
+        elif "mp3" in mime or "mpeg" in mime:
+            ext = "mp3"
+        elif "ogg" in mime:
+            ext = "ogg"
+
+    file_obj = io.BytesIO(audio_bytes)
+    file_obj.name = f"recording.{ext}"
+
+    kwargs = {"model": "whisper-1", "file": file_obj}
+    if language_code and language_code not in ("auto", "detect", "unknown"):
+        kwargs["language"] = language_code.split("-")[0]
+
+    resp = await client.audio.transcriptions.create(**kwargs)
+    transcript = (resp.text or "").strip()
+    return {
+        "transcript": transcript,
+        "detected_language": language_code or "en-IN",
+    }
+
+
+async def _gemini_speech_to_text(audio_bytes: bytes, mime_type: str | None, language_code: str | None) -> dict:
+    key = settings.gemini_api_key
+    if not key or "placeholder" in key.lower() or key.startswith("your_"):
+        raise SarvamUnavailableError("Gemini API key unavailable for STT.")
+    
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.messages import HumanMessage
+
+    b64_audio = base64.b64encode(audio_bytes).decode("utf-8")
+    actual_mime = mime_type or "audio/webm"
+    if ";" in actual_mime:
+        actual_mime = actual_mime.split(";")[0]
+
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        google_api_key=key,
+        temperature=0,
+    )
+    prompt = (
+        "Accurately transcribe the spoken audio recording into text. "
+        "Return ONLY the verbatim spoken text transcript. "
+        "Do not add any preamble, commentary, or formatting. If silent, return an empty string."
+    )
+    msg = HumanMessage(
+        content=[
+            {"type": "text", "text": prompt},
+            {"type": "media", "mime_type": actual_mime, "data": b64_audio},
+        ]
+    )
+    res = await llm.ainvoke([msg])
+    transcript = (res.content or "").strip()
+    return {
+        "transcript": transcript,
+        "detected_language": language_code or "en-IN",
+    }
 
 
 class SarvamClient:
@@ -74,142 +133,113 @@ class SarvamClient:
         return self._sdk_client
 
     async def speech_to_text(
-    self,
-    audio_base64: str,
-    language_code: str | None = None,
-    mime_type: str | None = None,
+        self,
+        audio_base64: str,
+        language_code: str | None = None,
+        mime_type: str | None = None,
     ) -> dict:
         """
-        Returns:
-        {
-            "transcript": str,
-            "detected_language": str
-        }
+        Transcribe audio to text using Sarvam AI, with automatic fallback
+        to OpenAI Whisper and Gemini Multimodal STT.
         """
-
         try:
             audio_bytes = base64.b64decode(audio_base64)
         except Exception as exc:
-            raise SarvamUnavailableError(
-            f"Invalid base64 audio data: {exc}"
-            ) from exc
+            raise SarvamUnavailableError(f"Invalid base64 audio data: {exc}") from exc
 
-    # Prefer the MIME type supplied by the client.
-    # Fall back to inspecting the audio bytes.
-        codec = None
+        # 1. Try Sarvam AI STT if API key is present
+        if self.api_key and not self.api_key.startswith("your_"):
+            try:
+                mime_to_codec = {
+                    "audio/mp4": "mp4",
+                    "audio/m4a": "mp4",
+                    "audio/wav": "wav",
+                    "audio/x-wav": "wav",
+                    "audio/mpeg": "mp3",
+                    "audio/mp3": "mp3",
+                    "audio/webm": "webm",
+                }
+                codec = mime_to_codec.get(mime_type.lower()) if mime_type else None
+                if not codec:
+                    codec = _detect_audio_codec(audio_bytes)
 
-        if mime_type:
-            mime_to_codec = {
-            "audio/mp4": "mp4",
-            "audio/m4a": "mp4",
-            "audio/wav": "wav",
-            "audio/x-wav": "wav",
-            "audio/mpeg": "mp3",
-            "audio/mp3": "mp3",
-            "audio/webm": "webm",
-        }
-            codec = mime_to_codec.get(mime_type.lower())
+                requested_language = language_code or "unknown"
+                client = self._get_sdk_client()
+                kwargs = {
+                    "file": ("audio", audio_bytes),
+                    "language_code": requested_language,
+                }
+                if codec:
+                    kwargs["input_audio_codec"] = codec
 
-        if not codec:
-            codec = _detect_audio_codec(audio_bytes)
+                result = client.speech_to_text.transcribe(**kwargs)
+                transcript = (getattr(result, "transcript", "") or "").strip()
 
-        requested_language = language_code or "unknown"
+                if transcript:
+                    return {
+                        "transcript": transcript,
+                        "detected_language": getattr(result, "language_code", None) or requested_language,
+                    }
+            except Exception as exc:
+                print(f"[STT] Sarvam STT failed: {exc}. Trying OpenAI Whisper fallback...")
 
+        # 2. Fallback to OpenAI Whisper STT
         try:
-            client = self._get_sdk_client()
+            return await _whisper_speech_to_text(audio_bytes, mime_type, language_code)
+        except Exception as exc1:
+            print(f"[STT] OpenAI Whisper fallback failed: {exc1}. Trying Gemini STT fallback...")
 
-            kwargs = {
-            "file": ("audio", audio_bytes),
-            "language_code": requested_language,
-            }
-
-            if codec:
-                kwargs["input_audio_codec"] = codec
-
-            print("[DEBUG] STT codec:", codec)
-            print("[DEBUG] STT language:", requested_language)
-            print("[DEBUG] STT audio bytes:", len(audio_bytes))
-
-            result = client.speech_to_text.transcribe(**kwargs)
-
-            print("[DEBUG] STT raw result:", result)
-            print("[DEBUG] STT transcript:", result.transcript)
-            print("[DEBUG] STT detected language:", result.language_code)
-
-            print("[DEBUG] SARVAM RAW RESULT:", result)
-            print("[DEBUG] RESULT TYPE:", type(result))
-            print("[DEBUG] TRANSCRIPT VALUE:", getattr(result, "transcript", None))
-            print("[DEBUG] LANGUAGE VALUE:", getattr(result, "language_code", None))
-
-            transcript = (result.transcript or "").strip()
-
-            return {
-            "transcript": transcript,
-            "detected_language": result.language_code or requested_language,
-            }
-
-        except ApiError as exc:
+        # 3. Fallback to Gemini Multimodal STT
+        try:
+            return await _gemini_speech_to_text(audio_bytes, mime_type, language_code)
+        except Exception as exc2:
             raise SarvamUnavailableError(
-            f"Sarvam STT failed ({exc.status_code}): {exc.body}"
-            ) from exc
+                f"All STT providers failed (Sarvam, Whisper, Gemini): {exc2}"
+            ) from exc2
 
-        except SarvamUnavailableError:
-            raise
-
-        except Exception as exc:
-            raise SarvamUnavailableError(
-            f"Sarvam STT failed: {exc}"
-            ) from exc
-        
     async def text_to_speech(
         self,
         text: str,
         language_code: str = "en-IN",
         speaker: str = "ishita",
-        ) -> str:
-        """Generate speech and return base64-encoded audio."""
+    ) -> str | None:
+        """Generate speech and return base64-encoded audio. Graceful fallback on error."""
+        if not self.api_key or self.api_key.startswith("your_"):
+            return None
 
         payload = {
-        "text": text,
-        "model": "bulbul:v3",
-        "language_code": language_code,
-        "speaker": speaker,
-        "output_audio_codec": "wav",
+            "text": text,
+            "model": "bulbul:v3",
+            "language_code": language_code,
+            "speaker": speaker,
+            "output_audio_codec": "wav",
         }
 
         try:
             async with httpx.AsyncClient(timeout=30) as client:
                 resp = await client.post(
-                f"{self.base_url}/text-to-speech",
-                headers=self._headers(),
-                json=payload,
+                    f"{self.base_url}/text-to-speech",
+                    headers=self._headers(),
+                    json=payload,
                 )
-
                 if resp.status_code >= 400:
-                    print("[DEBUG] TTS STATUS:", resp.status_code)
-                    print("[DEBUG] TTS RESPONSE:", resp.text)
-
-                resp.raise_for_status()
-
+                    return None
                 data = resp.json()
-
-            
-
                 audios = data.get("audios", [])
+                return audios[0] if audios else None
+        except Exception:
+            return None
 
-                if not audios:
-                    raise SarvamUnavailableError(
-                    "Sarvam TTS returned no audio."
-                    )
+    async def translate(
+        self,
+        text: str,
+        source_language_code: str,
+        target_language_code: str,
+    ) -> str:
+        """Translate text with graceful fallback."""
+        if not self.api_key or self.api_key.startswith("your_"):
+            return text
 
-                return audios[0]
-
-        except (httpx.HTTPError, SarvamUnavailableError) as exc:
-            raise SarvamUnavailableError(str(exc)) from exc
-        
-    async def translate(self, text: str, source_language_code: str,
-                         target_language_code: str) -> str:
-        """Unchanged."""
         payload = {
             "input": text,
             "source_language_code": source_language_code,
@@ -222,11 +252,12 @@ class SarvamClient:
                     headers=self._headers(),
                     json=payload,
                 )
-                resp.raise_for_status()
+                if resp.status_code >= 400:
+                    return text
                 data = resp.json()
                 return data.get("translated_text", text)
-        except (httpx.HTTPError, SarvamUnavailableError) as exc:
-            raise SarvamUnavailableError(str(exc)) from exc
+        except Exception:
+            return text
 
 
 sarvam_client = SarvamClient()

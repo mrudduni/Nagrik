@@ -196,6 +196,7 @@ export async function sendVoiceMessage(
   sessionId: string,
   citizenId: string = "frontend-citizen",
   language: string | null = null,
+  mimeType: string = "audio/webm",
 ): Promise<{
   userMessage?: ChatMessage
   assistantMessage: ChatMessage
@@ -206,6 +207,7 @@ export async function sendVoiceMessage(
     session_id: sessionId,
     citizen_id: citizenId,
     audio_base64: audioBase64,
+    mime_type: mimeType,
     language,
   })
 

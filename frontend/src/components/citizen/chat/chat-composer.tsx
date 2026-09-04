@@ -60,6 +60,8 @@ export function ChatComposer({
 
   const recordingStartRef =
     React.useRef<number>(0)
+  const speechRecognitionRef =
+    React.useRef<any>(null)
 
   React.useEffect(() => {
     if (!isRecording) return
@@ -102,6 +104,34 @@ export function ChatComposer({
         : new MediaRecorder(stream)
 
       audioChunksRef.current = []
+
+      // Try initiating live browser speech recognition if supported
+      if (typeof window !== "undefined") {
+        const SpeechRecognition =
+          (window as any).SpeechRecognition ||
+          (window as any).webkitSpeechRecognition
+        if (SpeechRecognition) {
+          try {
+            const recognition = new SpeechRecognition()
+            recognition.continuous = true
+            recognition.interimResults = true
+            recognition.lang = "en-IN"
+            recognition.onresult = (e: any) => {
+              let transcript = ""
+              for (let i = 0; i < e.results.length; i++) {
+                transcript += e.results[i][0].transcript
+              }
+              if (transcript.trim()) {
+                setValue(transcript)
+              }
+            }
+            recognition.start()
+            speechRecognitionRef.current = recognition
+          } catch (e) {
+            console.warn("Browser SpeechRecognition notice:", e)
+          }
+        }
+      }
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -185,6 +215,13 @@ export function ChatComposer({
   function stopRecording(send: boolean) {
     const recorder =
       mediaRecorderRef.current
+
+    if (speechRecognitionRef.current) {
+      try {
+        speechRecognitionRef.current.stop()
+      } catch (e) {}
+      speechRecognitionRef.current = null
+    }
 
     if (
       !recorder ||
