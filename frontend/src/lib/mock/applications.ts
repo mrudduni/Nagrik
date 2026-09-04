@@ -1,0 +1,133 @@
+import type { Application } from "@/types"
+
+export const MOCK_APPLICATIONS: Application[] = [
+  {
+    id: "app-90021",
+    schemeId: "sch-pmay-u",
+    schemeTitle: "Pradhan Mantri Awas Yojana (Urban)",
+    citizenId: "cz-10234",
+    status: "documents-pending",
+    progress: 60,
+    submittedOn: "2026-07-18",
+    lastUpdated: "2026-08-24",
+    referenceNumber: "PMAY/2026/DL/90021",
+    department: "Housing & Urban Affairs",
+    formData: {
+      applicantName: "Ravish Kansal",
+      annualIncome: 380000,
+      propertyOwned: "false",
+      loanAmount: 2500000,
+    },
+    documents: [
+      { id: "doc-1", name: "Aadhaar Card", type: "Identity", status: "verified", uploadedOn: "2026-07-18", sizeKb: 420 },
+      { id: "doc-2", name: "Income Certificate", type: "Income", status: "verified", uploadedOn: "2026-07-18", sizeKb: 210 },
+      { id: "doc-3", name: "Bank Statement (6 months)", type: "Financial", status: "pending", uploadedOn: "2026-07-19", sizeKb: 980 },
+      { id: "doc-4", name: "Property Sale Agreement", type: "Property", status: "requested" },
+    ],
+    timeline: [
+      { id: "t1", label: "Application submitted", description: "Application filed via AI Application Assistant", timestamp: "2026-07-18T10:12:00", actor: "citizen", status: "completed" },
+      { id: "t2", label: "Initial screening", description: "Document checklist verified by system", timestamp: "2026-07-19T09:00:00", actor: "system", status: "completed" },
+      { id: "t3", label: "Bank verification", description: "Income and bank statement under review", timestamp: "2026-07-25T14:30:00", actor: "officer", status: "completed" },
+      { id: "t4", label: "Additional document requested", description: "Property sale agreement required for loan linkage", timestamp: "2026-08-24T11:05:00", actor: "officer", status: "current" },
+      { id: "t5", label: "Subsidy sanction", description: "Final approval and subsidy credit to loan account", timestamp: "", actor: "system", status: "upcoming" },
+    ],
+    requiredActions: [
+      { id: "ra-1", label: "Upload Property Sale Agreement", description: "Required to link subsidy with home loan disbursal", dueDate: "2026-09-10", severity: "high" },
+    ],
+    estimatedCompletion: "2026-09-20",
+  },
+  {
+    id: "app-90045",
+    schemeId: "sch-solar-rooftop",
+    schemeTitle: "PM Surya Ghar: Muft Bijli Yojana",
+    citizenId: "cz-10234",
+    status: "under-review",
+    progress: 40,
+    submittedOn: "2026-08-10",
+    lastUpdated: "2026-08-21",
+    referenceNumber: "PMSG/2026/DL/90045",
+    department: "New and Renewable Energy",
+    formData: { rooftopArea: 420, sanctionedLoad: "5kW", discom: "BSES Rajdhani" },
+    documents: [
+      { id: "doc-5", name: "Electricity Bill", type: "Utility", status: "verified", uploadedOn: "2026-08-10", sizeKb: 150 },
+      { id: "doc-6", name: "Property Ownership Proof", type: "Property", status: "verified", uploadedOn: "2026-08-10", sizeKb: 300 },
+    ],
+    timeline: [
+      { id: "t1", label: "Application submitted", description: "Registered on National Portal for Rooftop Solar", timestamp: "2026-08-10T16:20:00", actor: "citizen", status: "completed" },
+      { id: "t2", label: "DISCOM feasibility review", description: "Load and rooftop feasibility check in progress", timestamp: "2026-08-21T10:00:00", actor: "officer", status: "current" },
+      { id: "t3", label: "Vendor empanelment", description: "Empanelled vendor assigned for installation", timestamp: "", actor: "system", status: "upcoming" },
+      { id: "t4", label: "Installation & net metering", description: "Physical installation and subsidy release", timestamp: "", actor: "system", status: "upcoming" },
+    ],
+    requiredActions: [],
+    estimatedCompletion: "2026-10-05",
+  },
+  {
+    id: "app-88712",
+    schemeId: "sch-pmkisan",
+    schemeTitle: "PM-KISAN Samman Nidhi",
+    citizenId: "cz-10234",
+    status: "approved",
+    progress: 100,
+    submittedOn: "2026-03-02",
+    lastUpdated: "2026-04-06",
+    referenceNumber: "PMK/2026/DL/88712",
+    department: "Agriculture & Farmers Welfare",
+    formData: { landRecordId: "DL-KH-33210", landholdingAcres: 2.5 },
+    documents: [
+      { id: "doc-7", name: "Land Records", type: "Property", status: "verified", uploadedOn: "2026-03-02", sizeKb: 540 },
+      { id: "doc-8", name: "Bank Account Details", type: "Financial", status: "verified", uploadedOn: "2026-03-02", sizeKb: 90 },
+    ],
+    timeline: [
+      { id: "t1", label: "Application submitted", description: "Registered via PM-KISAN portal", timestamp: "2026-03-02T08:45:00", actor: "citizen", status: "completed" },
+      { id: "t2", label: "Revenue officer verification", description: "Land records verified", timestamp: "2026-03-20T12:00:00", actor: "officer", status: "completed" },
+      { id: "t3", label: "Approved", description: "Application approved for direct benefit transfer", timestamp: "2026-04-06T09:30:00", actor: "system", status: "completed" },
+      { id: "t4", label: "First installment disbursed", description: "₹2,000 credited to linked bank account", timestamp: "2026-04-10T00:00:00", actor: "system", status: "completed" },
+    ],
+    requiredActions: [],
+    estimatedCompletion: "2026-04-10",
+  },
+  {
+    id: "app-91190",
+    schemeId: "sch-nirmaan-scholarship",
+    schemeTitle: "AICTE Pragati Scholarship for Girls",
+    citizenId: "cz-10234",
+    status: "draft",
+    progress: 25,
+    lastUpdated: "2026-08-27",
+    referenceNumber: "DRAFT/90-91190",
+    department: "Higher Education",
+    formData: { studentName: "Ishita Kansal", course: "B.Tech Computer Science" },
+    documents: [],
+    timeline: [
+      { id: "t1", label: "Draft started", description: "AI Application Assistant pre-filled basic details from profile", timestamp: "2026-08-27T18:02:00", actor: "ai", status: "completed" },
+    ],
+    requiredActions: [
+      { id: "ra-2", label: "Complete admission details", description: "Add institute name and admission proof to continue", severity: "medium" },
+    ],
+  },
+  {
+    id: "app-87340",
+    schemeId: "sch-ayushman",
+    schemeTitle: "Ayushman Bharat - PM-JAY",
+    citizenId: "cz-10234",
+    status: "rejected",
+    progress: 100,
+    submittedOn: "2026-01-15",
+    lastUpdated: "2026-02-02",
+    referenceNumber: "PMJAY/2026/DL/87340",
+    department: "Health & Family Welfare",
+    formData: { familySize: 4 },
+    documents: [
+      { id: "doc-9", name: "Ration Card", type: "Identity", status: "rejected", uploadedOn: "2026-01-15", sizeKb: 210 },
+    ],
+    timeline: [
+      { id: "t1", label: "Application submitted", description: "Submitted for e-card generation", timestamp: "2026-01-15T11:00:00", actor: "citizen", status: "completed" },
+      { id: "t2", label: "SECC eligibility check failed", description: "Household not found in SECC 2011 deprivation list", timestamp: "2026-02-02T15:40:00", actor: "system", status: "completed" },
+    ],
+    requiredActions: [],
+  },
+]
+
+export function findApplicationById(id: string): Application | undefined {
+  return MOCK_APPLICATIONS.find((a) => a.id === id)
+}
