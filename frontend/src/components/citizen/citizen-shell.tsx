@@ -9,22 +9,31 @@ import { CitizenTopbar } from "./citizen-topbar"
 import { CitizenBottomNav } from "./citizen-bottom-nav"
 
 export function CitizenShell({ children }: { children: React.ReactNode }) {
+  const [isMounted, setIsMounted] = React.useState(false)
   const { session, isAuthLoading } = useApp()
   const router = useRouter()
 
   React.useEffect(() => {
-    if (!isAuthLoading && (!session || session.role !== "citizen")) {
+    setIsMounted(true)
+  }, [])
+
+  React.useEffect(() => {
+    if (isMounted && !isAuthLoading && (!session || session.role !== "citizen")) {
       router.replace("/login")
     }
-  }, [isAuthLoading, session, router])
+  }, [isMounted, isAuthLoading, session, router])
+
+  if (!isMounted) {
+    return null
+  }
 
   if (isAuthLoading || !session || session.role !== "citizen") {
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center gap-3 bg-background">
-        <div className="flex size-12 animate-pulse items-center justify-center rounded-xl bg-primary text-primary-foreground">
+      <div suppressHydrationWarning className="flex min-h-svh flex-col items-center justify-center gap-3 bg-background">
+        <div suppressHydrationWarning className="flex size-12 animate-pulse items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <LandmarkIcon className="size-6" />
         </div>
-        <p className="text-sm text-muted-foreground">Loading NAGRIK...</p>
+        <p suppressHydrationWarning className="text-sm text-muted-foreground">Loading NAGRIK...</p>
       </div>
     )
   }

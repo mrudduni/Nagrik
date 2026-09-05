@@ -132,14 +132,10 @@ class SarvamClient:
 
             result = client.speech_to_text.transcribe(**kwargs)
 
-            print("[DEBUG] STT raw result:", result)
-            print("[DEBUG] STT transcript:", result.transcript)
-            print("[DEBUG] STT detected language:", result.language_code)
-
-            print("[DEBUG] SARVAM RAW RESULT:", result)
-            print("[DEBUG] RESULT TYPE:", type(result))
-            print("[DEBUG] TRANSCRIPT VALUE:", getattr(result, "transcript", None))
-            print("[DEBUG] LANGUAGE VALUE:", getattr(result, "language_code", None))
+            try:
+                logger.debug("STT detected language: %s", getattr(result, "language_code", None))
+            except Exception:
+                pass
 
             transcript = (result.transcript or "").strip()
 

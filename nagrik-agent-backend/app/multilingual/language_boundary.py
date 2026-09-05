@@ -200,7 +200,7 @@ async def _transcribe_with_gemini(
     if not clean_mime.startswith("audio/"):
         clean_mime = "audio/webm"
 
-    logger.info("🎙️ Transcribing audio via Gemini multimodal API (mime: %s, bytes: %d)", clean_mime, len(audio_bytes))
+    logger.info("Transcribing audio via Gemini multimodal API (mime: %s, bytes: %d)", clean_mime, len(audio_bytes))
 
     client = genai.Client(api_key=settings.gemini_api_key)
     prompt = (
@@ -293,10 +293,6 @@ async def normalize_incoming(
 
         original_text = transcript
         original_language = detected_language
-
-        print("STT RESULT:", stt_result)
-        print("TRANSCRIPT:", transcript)
-        print("DETECTED LANGUAGE:", detected_language)
 
     else:
         original_text = (text or "").strip()
