@@ -1,9 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { AlertTriangle, Calendar, MapPin, Sparkles, Users2 } from "lucide-react"
+import { AlertTriangle, Calendar, MapPin, Sparkles, Users2, Workflow } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/shared/page-header"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { ListSkeleton } from "@/components/shared/loading-state"
@@ -28,6 +29,16 @@ export default function AlertsPage() {
         title="Predictive Risk Alerts"
         description="AI-forecasted civic risks based on complaint patterns, seasonal trends, and infrastructure data - act before issues escalate."
       />
+
+      <div className="mb-6 flex items-center justify-between rounded-lg border border-primary/20 bg-primary/[0.03] p-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <Workflow className="size-4 text-primary shrink-0" />
+          <span>Automated Escalation Workflows: Connected via <strong>n8n Webhook</strong> triggers for real-time municipal notification.</span>
+        </div>
+        <Badge variant="outline" className="hidden sm:flex border-primary/30 text-primary text-[11px] gap-1 font-normal">
+          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> n8n Live
+        </Badge>
+      </div>
 
       {!alerts && <ListSkeleton count={4} />}
 

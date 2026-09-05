@@ -18,9 +18,11 @@ import {
   User2,
   UserCheck,
   Users2,
+  Workflow,
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
@@ -185,12 +187,17 @@ export default function GovComplaintDetailPage() {
       )}
 
       {isOverdue && (
-        <Card className="mb-6 flex items-center gap-3 border-destructive/30 bg-destructive/5 p-4">
-          <ShieldAlert className="size-5 shrink-0 text-destructive" />
-          <div>
-            <p className="text-sm font-medium text-destructive">SLA Breached — Escalation Flag Active</p>
-            <p className="text-xs text-muted-foreground">Target resolution window was {issue.slaHours} hours. Notification dispatched to supervisory authority.</p>
+        <Card className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-destructive/30 bg-destructive/5 p-4">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="size-5 shrink-0 text-destructive" />
+            <div>
+              <p className="text-sm font-medium text-destructive">SLA Breached — Escalation Flag Active</p>
+              <p className="text-xs text-muted-foreground">Target resolution window was {issue.slaHours} hours. Automated escalation notice dispatched via n8n workflow.</p>
+            </div>
           </div>
+          <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive text-xs gap-1.5 shrink-0">
+            <Workflow className="size-3" /> n8n Dispatched
+          </Badge>
         </Card>
       )}
 
@@ -229,9 +236,14 @@ export default function GovComplaintDetailPage() {
 
           {/* Official Action Panel */}
           <Card className="border-primary/20 bg-primary/[0.02] p-5">
-            <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold">
-              <UserCheck className="size-4 text-primary" /> Government Action Panel
-            </h2>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+                <UserCheck className="size-4 text-primary" /> Government Action Panel
+              </h2>
+              <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/5 text-[11px] font-normal text-primary">
+                <Workflow className="size-3" /> n8n Automation Active
+              </Badge>
+            </div>
 
             {issue.status === "submitted" && (
               <div className="space-y-3">

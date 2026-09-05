@@ -27,7 +27,7 @@ class N8NClient:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=8.0) as client:
+            async with httpx.AsyncClient(timeout=8.0, verify=False) as client:
                 response = await client.post(self.webhook_url, json=data)
                 response.raise_for_status()
                 logger.info(f"Dispatched n8n webhook for {event_type}")
